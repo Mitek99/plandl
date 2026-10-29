@@ -14,6 +14,6 @@ PlanDL is a small, strict, LLM-friendly language for spatial plans. Walls connec
 
 ## Try PlanDL
 
-Edit the definition and watch the real parser, validator, and SVG renderer update the plan in your browser.
+Edit the definition and watch the real parser, validator, and SVG renderer update the plan in your browser. This approximate conversion of the supplied floor-plan image preserves its 11.875 m envelope and labeled room areas.
 
 {{< plandl-playground >}}

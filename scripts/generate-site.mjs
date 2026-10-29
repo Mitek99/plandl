@@ -6,7 +6,7 @@ const cli = "modules/cli/dist/cli.js";
 const outputDirectory = "docs/static/examples";
 mkdirSync(outputDirectory, { recursive: true });
 
-for (const example of ["open-plan", "terrace", "auto-extend"]) {
+for (const example of ["open-plan", "terrace", "auto-extend", "optimus-prime"]) {
   const source = `examples/${example}.plandl`;
   execFileSync(process.execPath, [cli, "check", source], { stdio: "inherit" });
   execFileSync(process.execPath, [cli, "compile", source, "--output", `${outputDirectory}/${example}.svg`], { stdio: "inherit" });

@@ -1,0 +1,61 @@
+LET envelope = 11875mm
+LET living_width = 7067mm
+LET living_depth = 6835mm
+LET utility_width = 2500mm
+LET service_width = 4300mm
+LET bedroom_divider_offset = 3224mm
+LET upper_bedroom_offset = 8651mm
+
+WALL EXTERNAL south "South exterior" DIRECTION 90 LENGTH envelope
+DOOR EXTERNAL front_door "Front door" OFFSET 2700mm SIDE LEFT OPENING_TYPE HINGED
+WALL EXTERNAL east "East exterior" START south.end DIRECTION 0 LENGTH envelope
+WALL EXTERNAL north "North exterior" START east.end DIRECTION 270 LENGTH envelope
+WALL EXTERNAL west "West exterior" START north.end DIRECTION 180
+
+WALL INTERNAL central "Central partition" START south.at(living_width) DIRECTION 0
+WALL INTERNAL living_south "Living kitchen south" START west.at(living_depth) DIRECTION 90
+WALL INTERNAL utility_east "Utility east" START south.at(utility_width) DIRECTION 0
+WALL INTERNAL laundry_divider "Laundry divider" START west.at(9835mm) DIRECTION 90
+
+WALL INTERNAL bedroom_south_divider "South bedroom north" START central.at(bedroom_divider_offset) DIRECTION 90
+WALL INTERNAL bedroom_north_divider "North bedroom south" START east.at(upper_bedroom_offset) DIRECTION 270
+WALL INTERNAL bath_west "Bathroom west" START bedroom_south_divider.at(2808mm) DIRECTION 0
+WALL INTERNAL bath_north "Bathroom north" START bath_west.at(3400mm) DIRECTION 90
+WALL INTERNAL hall_west "Right hall west" START bath_north.at(200mm) DIRECTION 0
+WALL INTERNAL hall_north "Right hall north" START hall_west.at(2000mm) DIRECTION 90
+
+WALL INTERNAL service_west "Service west" START south.at(service_width) DIRECTION 0
+WALL INTERNAL wc_north "WC north" START service_west.at(1120mm) DIRECTION 90
+WALL INTERNAL storage_north "Storage north" START service_west.at(2601mm) DIRECTION 90
+WALL INTERNAL hall_south "Central hall south" START utility_east.at(1429mm) DIRECTION 90
+
+ROOM living_kitchen "Living / kitchen" WALLS [north, central, living_south, west]
+ROOM pantry "Pantry" WALLS [south, utility_east, laundry_divider, west]
+ROOM laundry "Laundry" WALLS [laundry_divider, utility_east, living_south, west]
+ROOM wc "WC" WALLS [south, central, wc_north, service_west]
+ROOM storage "Storage" WALLS [wc_north, central, storage_north, service_west]
+ROOM central_hall "Hall" WALLS [hall_south, service_west, living_south, utility_east]
+ROOM bedroom_south "South bedroom" WALLS [south, east, bedroom_south_divider, central]
+ROOM bedroom_north "North bedroom" WALLS [bedroom_north_divider, east, north, central]
+ROOM bathroom "Bathroom" WALLS [bedroom_south_divider, east, bath_north, bath_west]
+ROOM right_hall "Right hall" WALLS [bath_north, east, hall_north, hall_west]
+
+DOOR INTERNAL bedroom_south_door "South bedroom door" ON central OFFSET 1000mm SIDE RIGHT OPENING_TYPE HINGED
+DOOR INTERNAL bedroom_north_door "North bedroom door" ON central OFFSET 9500mm SIDE RIGHT OPENING_TYPE HINGED
+DOOR INTERNAL bathroom_door "Bathroom door" ON bath_west OFFSET 500mm SIDE RIGHT OPENING_TYPE HINGED
+DOOR INTERNAL wc_door "WC door" ON service_west OFFSET 250mm SIDE RIGHT OPENING_TYPE HINGED
+DOOR INTERNAL laundry_door "Laundry door" ON utility_east OFFSET 2700mm SIDE LEFT OPENING_TYPE HINGED
+DOOR INTERNAL pantry_door "Pantry door" ON utility_east OFFSET 500mm SIDE LEFT OPENING_TYPE HINGED
+
+WINDOW living_window "Living window" ON north OFFSET 6000mm WIDTH 1800mm SIDE LEFT
+WINDOW north_bedroom_window "North bedroom window" ON north OFFSET 800mm WIDTH 1500mm SIDE LEFT
+WINDOW east_bedroom_window "East bedroom window" ON east OFFSET 9000mm WIDTH 1500mm SIDE LEFT
+WINDOW south_bedroom_window "South bedroom window" ON south OFFSET 8000mm WIDTH 1500mm SIDE LEFT
+WINDOW west_living_window "West living window" ON west OFFSET 1500mm WIDTH 1800mm SIDE LEFT
+
+OBJECT kitchen_counter "Kitchen counter" KIND COUNTER ON west OFFSET 500mm SIDE LEFT GAP 0mm SIZE 2500mm X default_kitchen_counter_depth
+OBJECT sofa "Sofa" KIND SOFA ON living_south OFFSET 800mm SIDE LEFT GAP 500mm SIZE 2600mm X 900mm
+OBJECT dining_table "Dining table" KIND TABLE ON living_south OFFSET 3900mm SIDE LEFT GAP 1200mm SIZE 1800mm X 1000mm
+OBJECT north_bed "North bed" KIND BED ON north OFFSET 700mm SIDE LEFT GAP 200mm SIZE 2000mm X 2100mm
+OBJECT south_bed "South bed" KIND BED ON south OFFSET 7800mm SIDE LEFT GAP 200mm SIZE 2000mm X 2100mm
+OBJECT bathroom_sink "Bathroom sink" KIND SINK ON bath_north OFFSET 500mm SIDE RIGHT GAP 100mm SIZE 700mm X 500mm
