@@ -53,6 +53,52 @@ function wallPolygon(wall: ResolvedWall): Point[] {
   return [wall.start, wall.end, add(wall.end, right, wall.thickness), add(wall.start, right, wall.thickness)];
 }
 
+interface WallJoin {
+  points: Point[];
+  external: boolean;
+}
+
+function endpointKey(point: Point): string {
+  return `${Math.round(point.x * 1e7)}:${Math.round(point.y * 1e7)}`;
+}
+
+function faceIntersection(a: Point, aDirection: Point, b: Point, bDirection: Point): Point | null {
+  const denominator = aDirection.x * bDirection.y - aDirection.y * bDirection.x;
+  if (Math.abs(denominator) < 1e-7) return null;
+  const relative = { x: b.x - a.x, y: b.y - a.y };
+  const distance = (relative.x * bDirection.y - relative.y * bDirection.x) / denominator;
+  return add(a, aDirection, distance);
+}
+
+function wallJoins(walls: ResolvedWall[]): WallJoin[] {
+  const joins: WallJoin[] = [];
+  const physical = walls.filter((wall) => (wall.type === "EXTERNAL" || wall.type === "INTERNAL") && wall.thickness > 0);
+  for (let aIndex = 0; aIndex < physical.length; aIndex += 1) {
+    for (let bIndex = aIndex + 1; bIndex < physical.length; bIndex += 1) {
+      const a = physical[aIndex]!;
+      const b = physical[bIndex]!;
+      for (const aEndpoint of ["start", "end"] as const) {
+        for (const bEndpoint of ["start", "end"] as const) {
+          const joint = a[aEndpoint];
+          if (endpointKey(joint) !== endpointKey(b[bEndpoint])) continue;
+          const aVectors = vector(a);
+          const bVectors = vector(b);
+          const aFace = add(joint, aVectors.right, a.thickness);
+          const bFace = add(joint, bVectors.right, b.thickness);
+          const intersection = faceIntersection(aFace, aVectors.along, bFace, bVectors.along);
+          if (intersection) {
+            joins.push({
+              points: [joint, aFace, intersection, bFace],
+              external: a.type === "EXTERNAL" || b.type === "EXTERNAL"
+            });
+          }
+        }
+      }
+    }
+  }
+  return joins;
+}
+
 function gapPolygon(wall: ResolvedWall, offset: number, width: number): Point[] {
   const { right } = vector(wall);
   const start = at(wall, offset);
@@ -95,10 +141,12 @@ export function renderSvg(plan: ResolvedPlan): string {
     throw new Error("Cannot render a plan with validation errors.");
   }
   const hosts = new Map(plan.walls.map((wall) => [wall.id, wall]));
+  const joins = wallJoins(plan.walls);
   const objectPolygons = plan.objects.map((object) => ({ object, points: objectPolygon(object, hosts.get(object.hostId)!) }));
   const allPoints = [
     ...plan.walls.filter((wall) => wall.type !== "VIRTUAL").flatMap(wallPolygon),
     ...plan.walls.flatMap((wall) => [wall.start, wall.end]),
+    ...joins.flatMap((join) => join.points),
     ...objectPolygons.flatMap((entry) => entry.points)
   ];
   const minX = Math.min(...allPoints.map((point) => point.x));
@@ -134,6 +182,9 @@ export function renderSvg(plan: ResolvedPlan): string {
     } else {
       output.push(polygon(wallPolygon(wall), frame, `fill="${wall.type === "EXTERNAL" ? "#2d3748" : "#4a5568"}" stroke="none"`));
     }
+  }
+  for (const join of joins) {
+    output.push(polygon(join.points, frame, `data-wall-join="true" fill="${join.external ? "#2d3748" : "#4a5568"}" stroke="none"`));
   }
 
   for (const opening of plan.openings) {
