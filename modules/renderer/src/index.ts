@@ -1,10 +1,6 @@
 import type { Point, ResolvedObject, ResolvedPlan, ResolvedWall } from "@plandl/core";
-
-interface Frame {
-  minX: number;
-  maxY: number;
-  margin: number;
-}
+import type { Frame } from "./frame.js";
+import { renderFurniture } from "./furniture.js";
 
 function format(value: number): string {
   return Number(value.toFixed(2)).toString();
@@ -163,8 +159,13 @@ export function renderSvg(plan: ResolvedPlan): string {
     output.push(line(at(host, door.offset + door.width), add(at(host, door.offset + door.width), right, host.thickness), frame, 'stroke="#4a5568" stroke-width="18"'));
   }
   for (const entry of objectPolygons) {
-    output.push(polygon(entry.points, frame, 'fill="#edf2f7" stroke="#4a5568" stroke-width="16"'));
-    output.push(text(centroid(entry.points), frame, entry.object.name, 130));
+    const furniture = renderFurniture(entry.object, hosts.get(entry.object.hostId)!, frame);
+    if (furniture) {
+      output.push(furniture);
+    } else {
+      output.push(polygon(entry.points, frame, 'fill="#edf2f7" stroke="#4a5568" stroke-width="16"'));
+      output.push(text(centroid(entry.points), frame, entry.object.name, 130));
+    }
   }
   for (const room of plan.rooms) {
     if (room.boundary.length === 0) continue;

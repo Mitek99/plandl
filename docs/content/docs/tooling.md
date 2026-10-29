@@ -29,6 +29,12 @@ In this repository, invoke the CLI with `node modules/cli/dist/cli.js` after `np
 
 `compile` writes SVG to standard output unless `--output` or `-o` is supplied. `describe` writes the complete resolved model. `spec` prints the compact grammar and semantic rules; a generated copy is available at [spec.txt](../../spec.txt).
 
+## Furniture symbols
+
+The renderer includes a deliberately small pictogram catalogue: `COUNTER`, `SOFA`, `TABLE`, `BED`, `SINK`, `CHAIR`, `WC`, `BATH`, `WARDROBE`, and `STOVE`. Symbols use the declared footprint and rotate with the host wall. Beds include pillows and duvet folds, dining tables include six chairs, and counters and bathroom fittings include recognizable details.
+
+Unknown object kinds retain the simple labelled-rectangle fallback. The catalogue is not intended to match ArchLang's broader fixture coverage.
+
 ## Deliberate non-goals
 
 The current toolchain does not attempt DXF/PDF export, IFC/BIM exchange, automatic layout, a runtime scripting language, a plugin system, a large fixture catalogue, or architectural habitability analysis.
