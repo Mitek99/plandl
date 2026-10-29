@@ -20,4 +20,4 @@ Built-in defaults are predeclared, read-only, and measured in millimetres. User 
 | `default_opening_height` | 2100 | Cased opening height |
 | `default_kitchen_counter_depth` | 650 | Kitchen counter depth |
 
-Use `plandl defaults --json` for the machine-readable list. A generated copy is also available at `/plandl/defaults.json`.
+Use `plandl defaults --json` for the machine-readable list. A generated copy is also available at [defaults.json](../../defaults.json).

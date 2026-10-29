@@ -26,7 +26,7 @@ plandl spec
 
 In this repository, invoke the CLI with `node modules/cli/dist/cli.js` after `npm run build`.
 
-`compile` writes SVG to standard output unless `--output` or `-o` is supplied. `describe` writes the complete resolved model. `spec` prints the compact grammar and semantic rules; a generated copy is available at `/plandl/spec.txt`.
+`compile` writes SVG to standard output unless `--output` or `-o` is supplied. `describe` writes the complete resolved model. `spec` prints the compact grammar and semantic rules; a generated copy is available at [spec.txt](../../spec.txt).
 
 ## Deliberate non-goals
 

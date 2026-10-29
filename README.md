@@ -48,7 +48,7 @@ The first wall starts at an implicit origin. Every later wall attaches to an ear
 - `modules/cli` — `check`, `compile`, `describe`, `defaults`, and `spec` commands.
 - `examples` — complete open-plan and terrace examples.
 - `docs` — Hugo/Hextra documentation site.
-- `scripts` — example generation, site builds, preview, and Pages deployment.
+- `scripts` — example generation, site builds, preview, and AWS/Pages deployment.
 
 ## Documentation development
 
@@ -61,6 +61,14 @@ npm run site:serve
 ```
 
 `npm run site:generate` validates the examples and regenerates their SVGs plus the machine-readable defaults and compact specification used by the site.
+
+## AWS deployment
+
+The documentation is published at [https://d3eb034fkslao0.cloudfront.net/](https://d3eb034fkslao0.cloudfront.net/) from a private S3 bucket through CloudFront. With AWS credentials configured, rebuild, upload, and invalidate the distribution with:
+
+```sh
+npm run site:deploy:aws
+```
 
 ## Project scope
 
