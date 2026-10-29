@@ -356,8 +356,8 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
         return null;
       }
     }
-    if (!direction || !length) {
-      parser.error("MISSING_WALL_FIELD", "WALL requires DIRECTION and LENGTH.");
+    if (!direction) {
+      parser.error("MISSING_WALL_FIELD", "WALL requires DIRECTION; LENGTH is optional.");
       return null;
     }
     return { kind: "wall", wallType, id, name, start, direction, length, thickness, height, location };

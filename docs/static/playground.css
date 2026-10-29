@@ -1,0 +1,89 @@
+.plandl-playground {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.plandl-editor,
+.plandl-preview {
+  min-width: 0;
+}
+
+.plandl-editor label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+#plandl-editor {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 32rem;
+  padding: 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font: 0.82rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  resize: vertical;
+}
+
+.plandl-preview {
+  display: grid;
+  align-content: start;
+}
+
+#plandl-preview {
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+#plandl-preview svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#plandl-status {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+}
+
+#plandl-status[data-state="valid"] {
+  color: #24745a;
+}
+
+#plandl-status[data-state="error"],
+#plandl-diagnostics {
+  color: #b42318;
+}
+
+#plandl-diagnostics {
+  margin: 0;
+  padding-left: 1.25rem;
+  font: 0.78rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (min-width: 1100px) {
+  .plandl-playground {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  #plandl-editor {
+    border-color: #475569;
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+
+  #plandl-preview {
+    border-color: #475569;
+  }
+
+  #plandl-status[data-state="valid"] {
+    color: #6fd3ac;
+  }
+}

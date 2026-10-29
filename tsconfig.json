@@ -4,6 +4,7 @@
     { "path": "modules/core" },
     { "path": "modules/parser" },
     { "path": "modules/renderer" },
-    { "path": "modules/cli" }
+    { "path": "modules/cli" },
+    { "path": "modules/playground" }
   ]
 }

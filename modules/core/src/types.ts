@@ -44,7 +44,7 @@ export interface WallDefinition extends DefinitionBase {
   wallType: WallType;
   start?: WallAnchor;
   direction: Expression;
-  length: Expression;
+  length?: Expression;
   thickness?: Expression;
   height?: Expression;
 }
@@ -113,6 +113,7 @@ export interface ResolvedWall extends DefinitionBase {
   end: Point;
   direction: number;
   length: number;
+  autoLength: boolean;
   thickness: number;
   height: number;
 }

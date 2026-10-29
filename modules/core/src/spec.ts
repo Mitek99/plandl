@@ -12,7 +12,7 @@ LEXICAL RULES
 
 DEFINITIONS
 LET id = expression
-WALL <EXTERNAL|INTERNAL|VIRTUAL|TERRACE> id "name" [START anchor] [THICKNESS length] [HEIGHT length] DIRECTION degrees LENGTH length
+WALL <EXTERNAL|INTERNAL|VIRTUAL|TERRACE> id "name" [START anchor] [THICKNESS length] [HEIGHT length] DIRECTION degrees [LENGTH length]
 ROOM id "name" WALLS [wall_id, ...]
 DOOR <INTERNAL|EXTERNAL> id "name" [ON wall_id] OFFSET length [WIDTH length] [HEIGHT length] SIDE <LEFT|RIGHT> OPENING_TYPE type
 WINDOW id "name" [ON wall_id] OFFSET length WIDTH length [HEIGHT length] [SILL_HEIGHT length] SIDE <LEFT|RIGHT>
@@ -29,6 +29,8 @@ SEMANTICS
 - Every later wall must reference an earlier wall. Forward references and dependency cycles are invalid.
 - Variables are sequential. Built-in default_ variables are read-only.
 - Wall lengths and attached offsets use the directed reference face. Opening offsets target the leading edge.
+- Exterior shells run counter-clockwise with the interior on LEFT; lengths use interior faces and thickness extends outward.
+- Omitted LENGTH auto-extends to the nearest explicit obstacle. Auto walls are obstacles in source order, so the next auto wall can form a T-junction with the previous one. No intersection is UNTERMINATED_WALL.
 - Omitting ON uses the closest preceding WALL definition.
 - T-junctions split walls internally. Rooms may use different subsegments of one source wall.
 - A room's wall references must select exactly one closed, non-self-intersecting boundary.

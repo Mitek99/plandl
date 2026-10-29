@@ -33,12 +33,14 @@ LET depth = 4000mm
 WALL EXTERNAL south "South exterior" DIRECTION 90 LENGTH width
 WALL EXTERNAL east "East exterior" START south.end DIRECTION 0 LENGTH depth
 WALL EXTERNAL north "North exterior" START east.end DIRECTION 270 LENGTH width
-WALL EXTERNAL west "West exterior" START north.end DIRECTION 180 LENGTH depth
+WALL EXTERNAL west "West exterior" START north.end DIRECTION 180
 
 ROOM studio "Studio" WALLS [south, east, north, west]
 ```
 
-The first wall starts at an implicit origin. Every later wall attaches to an earlier wall. The validator resolves T-junctions, checks room closure, and rejects wall crossings and overlaps.
+The first wall starts at an implicit origin. Every later wall attaches to an earlier wall. Omitted lengths extend to the nearest obstacle in source order, so the west wall above closes the shell automatically. The validator resolves T-junctions, checks room closure, and rejects wall crossings and overlaps.
+
+Exterior shell walls run counter-clockwise with the interior on `LEFT`; their lengths describe interior faces and thickness extends outward.
 
 ## Repository layout
 
@@ -46,7 +48,8 @@ The first wall starts at an implicit origin. Every later wall attaches to an ear
 - `modules/core` — defaults, sequential resolver, normalized model, and geometry validation.
 - `modules/renderer` — deterministic SVG renderer.
 - `modules/cli` — `check`, `compile`, `describe`, `defaults`, and `spec` commands.
-- `examples` — complete open-plan and terrace examples.
+- `modules/playground` — the live browser editor used on the documentation front page.
+- `examples` — complete open-plan, terrace, and auto-extension examples.
 - `docs` — Hugo/Hextra documentation site.
 - `scripts` — example generation, site builds, preview, and AWS/Pages deployment.
 

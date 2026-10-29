@@ -46,6 +46,8 @@ Wall types:
 
 Optional `THICKNESS` and `HEIGHT` expressions override type defaults. Absolute coordinates are not part of the language.
 
+`LENGTH` is optional for every wall type. An auto-extending wall stops at the nearest explicit wall in its direction. Auto walls are resolved in source order, so a later auto wall can also stop at an earlier one. This makes two auto walls form a T-junction: the first extends, and the second is limited. An exterior wall can use the same rule to close a shell. If no intersection exists, validation fails with `UNTERMINATED_WALL`.
+
 ## Rooms
 
 ```text

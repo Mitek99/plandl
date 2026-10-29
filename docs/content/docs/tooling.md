@@ -13,6 +13,7 @@ PlanDL uses ArchLang's tooling philosophy as a reference: deterministic output, 
 | `@plandl/core` | Provides types, defaults, sequential resolution, normalized JSON, and geometric validation. |
 | `@plandl/renderer` | Produces deterministic SVG from a valid resolved plan. |
 | `@plandl/cli` | Exposes the parser, resolver, validator, and renderer as command-line tools. |
+| `@plandl/playground` | Runs the same packages in the browser for the front-page live editor. |
 
 ## Commands
 

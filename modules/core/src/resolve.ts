@@ -88,6 +88,60 @@ function wallDefaults(wall: WallDefinition): { thickness: number; height: number
   };
 }
 
+const EPSILON = 1e-7;
+
+function cross(a: Point, b: Point): number {
+  return a.x * b.y - a.y * b.x;
+}
+
+function directionVector(wall: ResolvedWall): Point {
+  const radians = wall.direction * Math.PI / 180;
+  return { x: Math.sin(radians), y: Math.cos(radians) };
+}
+
+function clean(value: number): number {
+  return Math.round(value * 1e7) / 1e7;
+}
+
+function pointAlong(wall: ResolvedWall, offset: number): Point {
+  const direction = directionVector(wall);
+  return { x: clean(wall.start.x + direction.x * offset), y: clean(wall.start.y + direction.y * offset) };
+}
+
+function rayIntersection(wall: ResolvedWall, obstacle: ResolvedWall): number | undefined {
+  const ray = directionVector(wall);
+  const segment = { x: obstacle.end.x - obstacle.start.x, y: obstacle.end.y - obstacle.start.y };
+  const denominator = cross(ray, segment);
+  if (Math.abs(denominator) <= EPSILON) return undefined;
+  const relative = { x: obstacle.start.x - wall.start.x, y: obstacle.start.y - wall.start.y };
+  const distance = cross(relative, segment) / denominator;
+  const position = cross(relative, ray) / denominator;
+  if (distance > EPSILON && position >= -EPSILON && position <= 1 + EPSILON) {
+    return distance;
+  }
+  return undefined;
+}
+
+function extendAutoWalls(walls: ResolvedWall[], diagnostics: Diagnostic[]): void {
+  const obstacles = walls.filter((wall) => !wall.autoLength && Number.isFinite(wall.length) && wall.length > 0);
+  for (const wall of walls.filter((candidate) => candidate.autoLength)) {
+    let nearest = Number.POSITIVE_INFINITY;
+    for (const obstacle of obstacles) {
+      const distance = rayIntersection(wall, obstacle);
+      if (distance !== undefined && distance < nearest) nearest = distance;
+    }
+    if (!Number.isFinite(nearest)) {
+      report(diagnostics, "UNTERMINATED_WALL", `Wall ${wall.id} does not intersect another wall in its direction.`, wall.location);
+      wall.length = 0;
+      wall.end = { ...wall.start };
+      continue;
+    }
+    wall.length = clean(nearest);
+    wall.end = pointAlong(wall, wall.length);
+    obstacles.push(wall);
+  }
+}
+
 export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic[] = []): ResolvedPlan {
   const diagnostics = [...parseDiagnostics];
   const variables = new Map<string, number>(Object.entries(DEFAULTS));
@@ -138,22 +192,26 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
         } else if (anchor.point === "start") {
           start = { ...host.start };
         } else if (anchor.point === "end") {
-          start = { ...host.end };
+          if (host.autoLength) {
+            report(diagnostics, "UNRESOLVED_AUTO_REFERENCE", `Wall ${host.id} has no resolved end before auto-extension.`, definition.location);
+            start = { ...host.start };
+          } else {
+            start = { ...host.end };
+          }
         } else {
           const offset = evaluate(anchor.offset!, variables, definition.location, diagnostics);
-          if (offset < 0 || offset > host.length) {
+          if (offset < 0 || (!host.autoLength && offset > host.length)) {
             report(diagnostics, "INVALID_ANCHOR_OFFSET", `Anchor offset must be within wall ${host.id}.`, definition.location);
           }
-          const ratio = host.length === 0 ? 0 : offset / host.length;
-          start = {
-            x: host.start.x + (host.end.x - host.start.x) * ratio,
-            y: host.start.y + (host.end.y - host.start.y) * ratio
-          };
+          start = pointAlong(host, offset);
         }
       }
 
       const direction = evaluate(definition.direction, variables, definition.location, diagnostics);
-      const length = positive(evaluate(definition.length, variables, definition.location, diagnostics), `Length of ${definition.id}`, definition.location, diagnostics);
+      const autoLength = definition.length === undefined;
+      const length = definition.length
+        ? positive(evaluate(definition.length, variables, definition.location, diagnostics), `Length of ${definition.id}`, definition.location, diagnostics)
+        : 0;
       const defaults = wallDefaults(definition);
       let thickness = definition.thickness
         ? positive(evaluate(definition.thickness, variables, definition.location, diagnostics), `Thickness of ${definition.id}`, definition.location, diagnostics, true)
@@ -168,23 +226,20 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
         thickness = 0;
         height = 0;
       }
-      const radians = direction * Math.PI / 180;
-      const end = {
-        x: start.x + length * Math.sin(radians),
-        y: start.y + length * Math.cos(radians)
-      };
       const wall: ResolvedWall = {
         id: definition.id,
         name: definition.name,
         location: definition.location,
         type: definition.wallType,
         start,
-        end,
+        end: { ...start },
         direction,
         length,
+        autoLength,
         thickness,
         height
       };
+      wall.end = autoLength ? { ...start } : pointAlong(wall, length);
       walls.push(wall);
       wallById.set(wall.id, wall);
       lastWallId = wall.id;
@@ -208,13 +263,8 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
       offset: positive(evaluate(definition.offset, variables, definition.location, diagnostics), `Offset of ${definition.id}`, definition.location, diagnostics, true),
       side: definition.side
     };
-    const checkSpan = (width: number) => {
-      if (base.offset + width > host.length + 1e-7) {
-        report(diagnostics, "ATTACHMENT_OUTSIDE_WALL", `${definition.id} extends beyond wall ${host.id}.`, definition.location);
-      }
-    };
     const checkHeight = (height: number, bottom = 0) => {
-      if (bottom + height > host.height + 1e-7) {
+      if (bottom + height > host.height + EPSILON) {
         report(diagnostics, "ATTACHMENT_ABOVE_WALL", `${definition.id} extends above wall ${host.id}.`, definition.location);
       }
     };
@@ -234,7 +284,6 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
         definition.location,
         diagnostics
       );
-      checkSpan(width);
       checkHeight(height);
       doors.push({ ...base, type: definition.doorType, width, height, openingType: definition.openingType });
     } else if (definition.kind === "window") {
@@ -252,7 +301,6 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
         diagnostics,
         true
       );
-      checkSpan(width);
       checkHeight(height, sillHeight);
       windows.push({ ...base, width, height, sillHeight });
     } else if (definition.kind === "opening") {
@@ -263,7 +311,6 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
         definition.location,
         diagnostics
       );
-      checkSpan(width);
       checkHeight(height);
       openings.push({ ...base, width, height, openingType: definition.openingType });
     } else {
@@ -276,8 +323,43 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
       const gap = definition.gap
         ? positive(evaluate(definition.gap, variables, definition.location, diagnostics), `Gap of ${definition.id}`, definition.location, diagnostics, true)
         : 0;
-      checkSpan(along);
       objects.push({ ...base, objectType: definition.objectType, gap, size: [along, depth] });
+    }
+  }
+
+  extendAutoWalls(walls, diagnostics);
+
+  for (const definition of document.definitions) {
+    if (definition.kind !== "wall" || definition.start?.point !== "at") continue;
+    const host = wallById.get(definition.start.wallId);
+    if (!host?.autoLength) continue;
+    const offset = evaluate(definition.start.offset!, variables, definition.location, diagnostics);
+    if (offset > host.length) {
+      report(diagnostics, "INVALID_ANCHOR_OFFSET", `Anchor offset must be within auto-extended wall ${host.id}.`, definition.location);
+    }
+  }
+  for (const door of doors) {
+    const host = wallById.get(door.hostId)!;
+    if (door.offset + door.width > host.length + EPSILON) {
+      report(diagnostics, "ATTACHMENT_OUTSIDE_WALL", `${door.id} extends beyond wall ${host.id}.`, door.location);
+    }
+  }
+  for (const window of windows) {
+    const host = wallById.get(window.hostId)!;
+    if (window.offset + window.width > host.length + EPSILON) {
+      report(diagnostics, "ATTACHMENT_OUTSIDE_WALL", `${window.id} extends beyond wall ${host.id}.`, window.location);
+    }
+  }
+  for (const opening of openings) {
+    const host = wallById.get(opening.hostId)!;
+    if (opening.offset + opening.width > host.length + EPSILON) {
+      report(diagnostics, "ATTACHMENT_OUTSIDE_WALL", `${opening.id} extends beyond wall ${host.id}.`, opening.location);
+    }
+  }
+  for (const object of objects) {
+    const host = wallById.get(object.hostId)!;
+    if (object.offset + object.size[0] > host.length + EPSILON) {
+      report(diagnostics, "ATTACHMENT_OUTSIDE_WALL", `${object.id} extends beyond wall ${host.id}.`, object.location);
     }
   }
 
