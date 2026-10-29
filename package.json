@@ -1,0 +1,26 @@
+{
+  "name": "plandl",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A small, strict, LLM-friendly language for relative spatial plans",
+  "type": "module",
+  "workspaces": [
+    "modules/*"
+  ],
+  "engines": {
+    "node": ">=26.13.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "cli": "node modules/cli/dist/cli.js",
+    "site:generate": "node scripts/generate-site.mjs",
+    "site:build": "node scripts/build-site.mjs",
+    "site:serve": "node scripts/serve-site.mjs",
+    "site:deploy": "node scripts/deploy-site.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

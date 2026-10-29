@@ -1,0 +1,22 @@
+{
+  "name": "@plandl/cli",
+  "version": "0.1.0",
+  "description": "Command-line tools for PlanDL",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": { "plandl": "./dist/cli.js" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@plandl/core": "0.1.0",
+    "@plandl/parser": "0.1.0",
+    "@plandl/renderer": "0.1.0"
+  },
+  "engines": { "node": ">=26.13.0" }
+}

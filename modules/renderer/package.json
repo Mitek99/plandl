@@ -1,0 +1,17 @@
+{
+  "name": "@plandl/renderer",
+  "version": "0.1.0",
+  "description": "Deterministic SVG renderer for resolved PlanDL plans",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": { "@plandl/core": "0.1.0" },
+  "engines": { "node": ">=26.13.0" }
+}
