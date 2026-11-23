@@ -1,22 +1,38 @@
+import { FURNITURE_TYPES } from "@plandl/core";
 import type {
   Definition,
   Diagnostic,
-  DoorType,
-  Expression,
-  OpeningDefinition,
+  FurnitureType,
+  InferredProperties,
+  ParameterValue,
   ParseResult,
   PlanDocument,
-  Side,
-  SourceLocation,
-  WallAnchor,
-  WallType
+  Scalar,
+  SourceLocation
 } from "@plandl/core";
 
 interface Token {
   type: "identifier" | "number" | "string" | "symbol" | "eof";
   text: string;
-  value?: string | number;
+  value?: string | Scalar;
   column: number;
+}
+
+type Fields = Record<string, ParameterValue>;
+
+const ROOM_FIELDS = ["NAME", "X", "Y", "MERGE"];
+const ROOM_INFERENCE = ["INNER_DIMENSIONS", "AREA"];
+const FURNITURE_FIELDS = ["WALL", "OFFSET", "PADDING", "WIDTH", "DEPTH"];
+
+function commandFields(command: string): { explicit: string[]; inferred: string[] } | undefined {
+  if (command === "GRID") return { explicit: ["STEPS_X", "STEPS_Y"], inferred: ["OUTER_DIMENSIONS", "OUTER_AREA", "PERIMETER"] };
+  if (command === "ROOM" || command === "TERRACE") return { explicit: ROOM_FIELDS, inferred: ROOM_INFERENCE };
+  if (command === "DEFAULT") return { explicit: ["INNER_THICKNESS", "BEARING_THICKNESS", "OUTER_THICKNESS"], inferred: [] };
+  if (command === "BEARING") return { explicit: ["X", "Y"], inferred: [] };
+  if (command === "WINDOW" || command === "OPENING") return { explicit: ["WALL", "OFFSET", "WIDTH"], inferred: [] };
+  if (command === "DOOR") return { explicit: ["WALL", "OFFSET", "WIDTH", "HINGE", "OPENING"], inferred: [] };
+  if ((FURNITURE_TYPES as readonly string[]).includes(command)) return { explicit: FURNITURE_FIELDS, inferred: [] };
+  return undefined;
 }
 
 function tokenize(line: string, lineNumber: number, diagnostics: Diagnostic[]): Token[] {
@@ -36,13 +52,19 @@ function tokenize(line: string, lineNumber: number, diagnostics: Diagnostic[]): 
       index += match[0].length;
       continue;
     }
-    if (/\d|\./.test(char) && !(char === "." && !/\d/.test(line[index + 1] ?? ""))) {
-      const match = line.slice(index).match(/^(?:\d+(?:\.\d+)?|\.\d+)(mm|cm|m)?/);
+    if (/\d/.test(char) || (char === "." && /\d/.test(line[index + 1] ?? ""))) {
+      const match = line.slice(index).match(/^(?:\d+(?:\.\d+)?|\.\d+)(sqm|mm|cm|m)?/);
       if (match) {
-        const numeric = Number.parseFloat(match[0]);
-        const value = match[1] === "m" ? numeric * 1000 : match[1] === "cm" ? numeric * 10 : numeric;
-        tokens.push({ type: "number", text: match[0], value, column });
-        index += match[0].length;
+        const raw = match[0];
+        const unit = match[1] as Scalar["unit"];
+        const scalar: Scalar = {
+          value: Number.parseFloat(raw),
+          unit,
+          raw,
+          location: { line: lineNumber, column }
+        };
+        tokens.push({ type: "number", text: raw, value: scalar, column });
+        index += raw.length;
         continue;
       }
     }
@@ -75,7 +97,7 @@ function tokenize(line: string, lineNumber: number, diagnostics: Diagnostic[]): 
       index = cursor;
       continue;
     }
-    if ("[](),=+*/.-".includes(char)) {
+    if ("[],=-".includes(char)) {
       tokens.push({ type: "symbol", text: char, value: char, column });
       index += 1;
       continue;
@@ -100,8 +122,8 @@ class LineParser {
     return { line: this.line, column: token.column };
   }
 
-  peekToken(): Token {
-    return this.tokens[this.index]!;
+  peekToken(offset = 0): Token {
+    return this.tokens[Math.min(this.index + offset, this.tokens.length - 1)]!;
   }
 
   peek(text: string): boolean {
@@ -140,283 +162,232 @@ class LineParser {
     return token.text;
   }
 
-  id(): string | null {
-    const token = this.peekToken();
-    const value = this.identifier("ID");
-    if (value && !/^[a-z][a-z0-9_]*$/.test(value)) {
-      this.error("INVALID_ID", `ID ${value} must use lowercase letters, digits, and underscores.`, token);
-      return null;
+  value(): ParameterValue | null {
+    if (this.consume("[")) {
+      const values: Array<string | Scalar> = [];
+      while (!this.peek("]") && this.peekToken().type !== "eof") {
+        const value = this.scalarOrString();
+        if (value === null) return null;
+        values.push(value);
+        if (!this.consume(",") && !this.peek("]")) {
+          this.error("EXPECTED_COMMA", "Expected a comma between array values.");
+          return null;
+        }
+      }
+      if (!this.expect("]")) return null;
+      return values;
     }
-    return value;
+    return this.scalarOrString();
   }
 
-  name(): string | null {
-    const token = this.peekToken();
-    if (token.type !== "string") {
-      this.error("EXPECTED_NAME", "Expected a quoted name.", token);
-      return null;
-    }
-    this.take();
-    return String(token.value);
-  }
-
-  expression(): Expression | null {
-    return this.additive();
-  }
-
-  private additive(): Expression | null {
-    let left = this.multiplicative();
-    while (left && (this.peek("+") || this.peek("-"))) {
-      const operator = this.take().text as "+" | "-";
-      const right = this.multiplicative();
-      if (!right) return null;
-      left = { kind: "binary", operator, left, right };
-    }
-    return left;
-  }
-
-  private multiplicative(): Expression | null {
-    let left = this.unary();
-    while (left && (this.peek("*") || this.peek("/"))) {
-      const operator = this.take().text as "*" | "/";
-      const right = this.unary();
-      if (!right) return null;
-      left = { kind: "binary", operator, left, right };
-    }
-    return left;
-  }
-
-  private unary(): Expression | null {
-    if (this.peek("+") || this.peek("-")) {
-      const operator = this.take().text as "+" | "-";
-      const operand = this.unary();
-      return operand ? { kind: "unary", operator, operand } : null;
-    }
-    return this.primary();
-  }
-
-  private primary(): Expression | null {
+  private scalarOrString(): string | Scalar | null {
+    const negative = this.consume("-");
     const token = this.peekToken();
     if (token.type === "number") {
       this.take();
-      return { kind: "number", value: Number(token.value) };
+      const scalar = token.value as Scalar;
+      if (!negative) return scalar;
+      return { ...scalar, value: -scalar.value, raw: `-${scalar.raw}`, location: this.location(token) };
     }
-    if (token.type === "identifier") {
+    if (negative) {
+      this.error("EXPECTED_SCALAR", "Expected a number after -.", token);
+      return null;
+    }
+    if (token.type === "identifier" || token.type === "string") {
       this.take();
-      return { kind: "identifier", name: token.text };
+      return String(token.value);
     }
-    if (this.consume("(")) {
-      const expression = this.additive();
-      if (!this.expect(")")) return null;
-      return expression;
-    }
-    this.error("EXPECTED_EXPRESSION", "Expected a number, variable, or parenthesized expression.", token);
+    this.error("EXPECTED_VALUE", "Expected a string, scalar, or array.", token);
     return null;
   }
-
-  finish(): void {
-    if (this.peekToken().type !== "eof") {
-      this.error("UNEXPECTED_TOKEN", `Unexpected token: ${this.peekToken().text}.`);
-    }
-  }
 }
 
-interface AttachedFields {
-  hostId?: string;
-  offset?: Expression;
-  side?: Side;
-  width?: Expression;
-  height?: Expression;
-  sillHeight?: Expression;
-  openingType?: string;
-  objectType?: string;
-  gap?: Expression;
-  size?: [Expression, Expression];
+function scalar(value: ParameterValue | undefined): Scalar | undefined {
+  return value !== undefined && !Array.isArray(value) && typeof value !== "string" ? value : undefined;
 }
 
-function parseWallAnchor(parser: LineParser): WallAnchor | null {
-  const wallId = parser.id();
-  if (!wallId || !parser.expect(".")) return null;
-  const point = parser.identifier("start, end, or at");
-  if (point === "start" || point === "end") return { wallId, point };
-  if (point !== "at") {
-    parser.error("INVALID_ANCHOR", "Anchor must be .start, .end, or .at(offset).");
-    return null;
-  }
-  if (!parser.expect("(")) return null;
-  const offset = parser.expression();
-  if (!offset || !parser.expect(")")) return null;
-  return { wallId, point: "at", offset };
+function stringValue(value: ParameterValue | undefined): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
-function requiredFields(parser: LineParser, fields: AttachedFields, required: string[]): boolean {
-  let valid = true;
-  for (const field of required) {
-    if (fields[field as keyof AttachedFields] === undefined) {
-      parser.error("MISSING_FIELD", `Missing required field ${field}.`);
-      valid = false;
-    }
-  }
-  return valid;
+function scalarArray(value: ParameterValue | undefined): Scalar[] | undefined {
+  return Array.isArray(value) && value.every((entry) => typeof entry !== "string") ? value as Scalar[] : undefined;
 }
 
-function parseAttached(parser: LineParser, fields: AttachedFields): void {
-  const seen = new Set<string>();
-  while (parser.peekToken().type !== "eof") {
-    const field = parser.identifier("field name");
-    if (!field) return;
-    if (seen.has(field)) {
-      parser.error("DUPLICATE_FIELD", `Duplicate field ${field}.`);
-      return;
-    }
-    seen.add(field);
-    if (field === "ON") {
-      fields.hostId = parser.id() ?? undefined;
-    } else if (field === "OFFSET") {
-      fields.offset = parser.expression() ?? undefined;
-    } else if (field === "WIDTH") {
-      fields.width = parser.expression() ?? undefined;
-    } else if (field === "HEIGHT") {
-      fields.height = parser.expression() ?? undefined;
-    } else if (field === "SILL_HEIGHT") {
-      fields.sillHeight = parser.expression() ?? undefined;
-    } else if (field === "GAP") {
-      fields.gap = parser.expression() ?? undefined;
-    } else if (field === "SIDE") {
-      const side = parser.identifier("LEFT or RIGHT");
-      if (side !== "LEFT" && side !== "RIGHT") {
-        parser.error("INVALID_SIDE", "SIDE must be LEFT or RIGHT.");
-        return;
-      }
-      fields.side = side;
-    } else if (field === "OPENING_TYPE") {
-      fields.openingType = parser.identifier("opening type") ?? undefined;
-    } else if (field === "KIND") {
-      fields.objectType = parser.identifier("object kind") ?? undefined;
-    } else if (field === "SIZE") {
-      const along = parser.expression();
-      if (!along || !parser.expect("X")) return;
-      const depth = parser.expression();
-      if (!depth) return;
-      fields.size = [along, depth];
-    } else {
-      parser.error("UNKNOWN_FIELD", `Unknown field ${field}.`);
-      return;
-    }
-  }
+function stringArray(value: ParameterValue | undefined): string[] | undefined {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string") ? value as string[] : undefined;
 }
 
 function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnostic[]): Definition | null {
+  const initialDiagnostics = diagnostics.length;
   const parser = new LineParser(tokenize(line, lineNumber, diagnostics), lineNumber, diagnostics);
+  if (parser.peekToken().type === "eof") return null;
+  const inferredDefinition = parser.peek("INFER");
+  if (inferredDefinition) parser.take();
   const keywordToken = parser.peekToken();
-  if (keywordToken.type === "eof") return null;
-  const keyword = parser.identifier("definition keyword");
+  const keyword = parser.identifier("command");
   if (!keyword) return null;
   const location = parser.location(keywordToken);
-
-  if (keyword === "LET") {
-    const id = parser.id();
-    if (!id || !parser.expect("=")) return null;
-    const expression = parser.expression();
-    if (!expression) return null;
-    parser.finish();
-    return { kind: "let", id, expression, location };
-  }
-
-  if (keyword === "WALL") {
-    const wallType = parser.identifier("wall type") as WallType | null;
-    if (!wallType || !["EXTERNAL", "INTERNAL", "VIRTUAL", "TERRACE"].includes(wallType)) {
-      parser.error("INVALID_WALL_TYPE", "Wall type must be EXTERNAL, INTERNAL, VIRTUAL, or TERRACE.");
-      return null;
-    }
-    const id = parser.id();
-    const name = parser.name();
-    if (!id || name === null) return null;
-    let start: WallAnchor | undefined;
-    let thickness: Expression | undefined;
-    let height: Expression | undefined;
-    let direction: Expression | undefined;
-    let length: Expression | undefined;
-    const seen = new Set<string>();
-    while (parser.peekToken().type !== "eof") {
-      const field = parser.identifier("wall field");
-      if (!field) return null;
-      if (seen.has(field)) {
-        parser.error("DUPLICATE_FIELD", `Duplicate field ${field}.`);
-        return null;
-      }
-      seen.add(field);
-      if (field === "START") start = parseWallAnchor(parser) ?? undefined;
-      else if (field === "THICKNESS") thickness = parser.expression() ?? undefined;
-      else if (field === "HEIGHT") height = parser.expression() ?? undefined;
-      else if (field === "DIRECTION") direction = parser.expression() ?? undefined;
-      else if (field === "LENGTH") length = parser.expression() ?? undefined;
-      else {
-        parser.error("UNKNOWN_WALL_FIELD", `Unknown wall field ${field}.`);
-        return null;
-      }
-    }
-    if (!direction) {
-      parser.error("MISSING_WALL_FIELD", "WALL requires DIRECTION; LENGTH is optional.");
-      return null;
-    }
-    return { kind: "wall", wallType, id, name, start, direction, length, thickness, height, location };
-  }
-
-  if (keyword === "ROOM") {
-    const id = parser.id();
-    const name = parser.name();
-    if (!id || name === null || !parser.expect("WALLS") || !parser.expect("[")) return null;
-    const wallIds: string[] = [];
-    while (!parser.peek("]") && parser.peekToken().type !== "eof") {
-      const wallId = parser.id();
-      if (!wallId) return null;
-      wallIds.push(wallId);
-      if (!parser.consume(",") && !parser.peek("]")) {
-        parser.error("EXPECTED_COMMA", "Expected comma between wall IDs.");
-        return null;
-      }
-    }
-    if (!parser.expect("]")) return null;
-    parser.finish();
-    return { kind: "room", id, name, wallIds, location };
-  }
-
-  let doorType: DoorType | undefined;
-  if (keyword === "DOOR") {
-    const value = parser.identifier("door type");
-    if (value !== "INTERNAL" && value !== "EXTERNAL") {
-      parser.error("INVALID_DOOR_TYPE", "DOOR requires INTERNAL or EXTERNAL before its ID.");
-      return null;
-    }
-    doorType = value;
-  }
-  if (!["DOOR", "WINDOW", "OPENING", "OBJECT"].includes(keyword)) {
-    parser.error("UNKNOWN_DEFINITION", `Unknown definition ${keyword}.`, keywordToken);
+  const schema = commandFields(keyword);
+  if (!schema) {
+    parser.error("UNKNOWN_COMMAND", `Unknown command ${keyword}.`, keywordToken);
     return null;
   }
-  const id = parser.id();
-  const name = parser.name();
-  if (!id || name === null) return null;
-  const fields: AttachedFields = {};
-  parseAttached(parser, fields);
-  if (!requiredFields(parser, fields, ["offset", "side"])) return null;
-  const base = { id, name, hostId: fields.hostId, offset: fields.offset!, side: fields.side!, location };
-  if (keyword === "DOOR") {
-    if (!requiredFields(parser, fields, ["openingType"])) return null;
-    return { ...base, kind: "door", doorType: doorType!, width: fields.width, height: fields.height, openingType: fields.openingType! };
+  if (inferredDefinition && keyword !== "WINDOW" && keyword !== "DOOR" && keyword !== "OPENING") {
+    parser.error("INVALID_INFERRED_DEFINITION", "Only WINDOW, DOOR, and OPENING definitions can use leading INFER.", keywordToken);
+    return null;
   }
-  if (keyword === "WINDOW") {
-    if (!requiredFields(parser, fields, ["width"])) return null;
-    return { ...base, kind: "window", width: fields.width!, height: fields.height, sillHeight: fields.sillHeight };
+
+  const fields: Fields = {};
+  const inferred: InferredProperties = {};
+  let infer = false;
+  while (parser.peekToken().type !== "eof") {
+    if (parser.peek("INFER") && parser.peekToken(1).text !== "=") {
+      const modifier = parser.take();
+      if (infer) parser.error("DUPLICATE_MODIFIER", "INFER may appear only once.", modifier);
+      infer = true;
+      continue;
+    }
+    const fieldToken = parser.peekToken();
+    const field = parser.identifier("parameter name");
+    if (!field || !parser.expect("=")) return null;
+    const target = infer ? inferred : fields;
+    if (fields[field] !== undefined || inferred[field] !== undefined) {
+      parser.error("DUPLICATE_PARAMETER", `Duplicate parameter ${field}.`, fieldToken);
+      return null;
+    }
+    const allowed = infer ? schema.inferred : schema.explicit;
+    if (!allowed.includes(field)) {
+      parser.error(
+        "UNKNOWN_PARAMETER",
+        infer ? `${field} cannot be inferred for ${keyword}.` : `Unknown ${keyword} parameter ${field}.`,
+        fieldToken
+      );
+      return null;
+    }
+    const value = parser.value();
+    if (value === null) return null;
+    target[field] = value;
   }
-  if (keyword === "OPENING") {
-    if (!requiredFields(parser, fields, ["width", "openingType"])) return null;
-    const opening: OpeningDefinition = { ...base, kind: "opening", width: fields.width!, height: fields.height, openingType: fields.openingType! };
-    return opening;
+
+  const missing = (field: string): boolean => {
+    if (fields[field] !== undefined) return false;
+    parser.error("MISSING_PARAMETER", `${keyword} requires ${field}.`, keywordToken);
+    return true;
+  };
+  const invalid = (field: string, expected: string): void => {
+    parser.error("INVALID_PARAMETER", `${keyword} ${field} must be ${expected}.`, keywordToken);
+  };
+
+  if (keyword === "GRID") {
+    missing("STEPS_X");
+    missing("STEPS_Y");
+    const stepsX = scalarArray(fields.STEPS_X);
+    const stepsY = scalarArray(fields.STEPS_Y);
+    if (!stepsX?.length) invalid("STEPS_X", "a nonempty array of scalars");
+    if (!stepsY?.length) invalid("STEPS_Y", "a nonempty array of scalars");
+    if (diagnostics.length > initialDiagnostics) return null;
+    return { kind: "grid", stepsX: stepsX!, stepsY: stepsY!, inferred, location };
   }
-  if (!requiredFields(parser, fields, ["objectType"])) return null;
-  return { ...base, kind: "object", objectType: fields.objectType!, gap: fields.gap, size: fields.size };
+
+  if (keyword === "ROOM" || keyword === "TERRACE") {
+    missing("NAME");
+    missing("X");
+    missing("Y");
+    const name = stringValue(fields.NAME);
+    const x = scalarArray(fields.X);
+    const y = scalarArray(fields.Y);
+    const merge = fields.MERGE === undefined ? [] : stringArray(fields.MERGE);
+    if (name === undefined || name.length === 0) invalid("NAME", "a nonempty string");
+    if (x?.length !== 2) invalid("X", "an array of two grid indices");
+    if (y?.length !== 2) invalid("Y", "an array of two grid indices");
+    if (!merge) invalid("MERGE", "an array of room names");
+    if (diagnostics.length > initialDiagnostics) return null;
+    return {
+      kind: keyword === "ROOM" ? "room" : "terrace",
+      name: name!,
+      x: x as [Scalar, Scalar],
+      y: y as [Scalar, Scalar],
+      merge: merge!,
+      inferred,
+      location
+    };
+  }
+
+  if (keyword === "DEFAULT") {
+    const innerThickness = scalar(fields.INNER_THICKNESS);
+    const bearingThickness = scalar(fields.BEARING_THICKNESS);
+    const outerThickness = scalar(fields.OUTER_THICKNESS);
+    if (fields.INNER_THICKNESS !== undefined && !innerThickness) invalid("INNER_THICKNESS", "a scalar");
+    if (fields.BEARING_THICKNESS !== undefined && !bearingThickness) invalid("BEARING_THICKNESS", "a scalar");
+    if (fields.OUTER_THICKNESS !== undefined && !outerThickness) invalid("OUTER_THICKNESS", "a scalar");
+    if (Object.keys(fields).length === 0) parser.error("MISSING_PARAMETER", "DEFAULT requires at least one thickness.", keywordToken);
+    if (diagnostics.length > initialDiagnostics) return null;
+    return { kind: "default", innerThickness, bearingThickness, outerThickness, location };
+  }
+
+  if (keyword === "BEARING") {
+    const x = fields.X === undefined ? [] : scalarArray(fields.X);
+    const y = fields.Y === undefined ? [] : scalarArray(fields.Y);
+    if (!x) invalid("X", "an array of grid indices");
+    if (!y) invalid("Y", "an array of grid indices");
+    if (x?.length === 0 && y?.length === 0) parser.error("MISSING_PARAMETER", "BEARING requires X or Y.", keywordToken);
+    if (diagnostics.length > initialDiagnostics) return null;
+    return { kind: "bearing", x: x!, y: y!, location };
+  }
+
+  if (keyword === "WINDOW" || keyword === "DOOR" || keyword === "OPENING") {
+    missing("WALL");
+    missing("OFFSET");
+    missing("WIDTH");
+    const wall = stringValue(fields.WALL);
+    const offset = scalar(fields.OFFSET);
+    const width = scalar(fields.WIDTH);
+    const hinge = stringValue(fields.HINGE);
+    const swing = stringValue(fields.OPENING);
+    if (!wall) invalid("WALL", "a room wall string such as Bedroom_EAST");
+    if (!offset) invalid("OFFSET", "a scalar");
+    if (!width) invalid("WIDTH", "a scalar");
+    if (hinge !== undefined && hinge !== "LEFT" && hinge !== "RIGHT") invalid("HINGE", "LEFT or RIGHT");
+    if (swing !== undefined && swing !== "INWARD" && swing !== "OUTWARD") invalid("OPENING", "INWARD or OUTWARD");
+    if (diagnostics.length > initialDiagnostics) return null;
+    return {
+      kind: "opening",
+      openingType: keyword,
+      wall: wall!,
+      offset: offset!,
+      width: width!,
+      hinge: hinge as "LEFT" | "RIGHT" | undefined,
+      swing: swing as "INWARD" | "OUTWARD" | undefined,
+      isInferred: inferredDefinition,
+      location
+    };
+  }
+
+  missing("WALL");
+  missing("OFFSET");
+  missing("WIDTH");
+  const wall = stringValue(fields.WALL);
+  const offset = scalar(fields.OFFSET);
+  const padding = scalar(fields.PADDING);
+  const width = scalar(fields.WIDTH);
+  const depth = scalar(fields.DEPTH);
+  if (!wall) invalid("WALL", "a room wall string such as Bedroom_SOUTH");
+  if (!offset) invalid("OFFSET", "a scalar");
+  if (fields.PADDING !== undefined && !padding) invalid("PADDING", "a scalar");
+  if (!width) invalid("WIDTH", "a scalar");
+  if (fields.DEPTH !== undefined && !depth) invalid("DEPTH", "a scalar");
+  if (diagnostics.length > initialDiagnostics) return null;
+  return {
+    kind: "furniture",
+    furnitureType: keyword as FurnitureType,
+    wall: wall!,
+    offset: offset!,
+    padding,
+    width: width!,
+    depth,
+    location
+  };
 }
 
 export function parsePlan(source: string): ParseResult {

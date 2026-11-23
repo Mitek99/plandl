@@ -1,23 +1,22 @@
 ---
-title: Default variables
+title: Wall defaults
 weight: 5
 ---
 
-Built-in defaults are predeclared, read-only, and measured in millimetres. User variables cannot use the reserved `default_` prefix. Explicit properties override defaults.
+`DEFAULT` overrides wall thicknesses for the whole plan. Values are lengths and must be greater than zero. Any omitted setting keeps its built-in value.
 
-| Variable | Value | Purpose |
+| Setting | Default | Purpose |
 |---|---:|---|
-| `default_external_thickness` | 400 | External wall thickness |
-| `default_internal_thickness` | 100 | Internal wall thickness |
-| `default_terrace_thickness` | 50 | Terrace guardrail thickness |
-| `default_wall_height` | 2700 | External and internal wall height |
-| `default_terrace_height` | 1100 | Terrace guardrail height |
-| `default_internal_door_width` | 700 | Internal door width |
-| `default_external_door_width` | 800 | External door width |
-| `default_door_height` | 2100 | Door height |
-| `default_window_height` | 1500 | Window height |
-| `default_window_sill_height` | 900 | Window sill above finished floor |
-| `default_opening_height` | 2100 | Cased opening height |
-| `default_kitchen_counter_depth` | 650 | Kitchen counter depth |
+| `INNER_THICKNESS` | 100mm | Non-bearing inner walls and the inside portion of non-bearing outer walls |
+| `BEARING_THICKNESS` | 250mm | Bearing inner walls and the inside portion of bearing outer walls |
+| `OUTER_THICKNESS` | 400mm | Total outer wall thickness |
 
-Use `plandl defaults --json` for the machine-readable list. A generated copy is also available at [defaults.json](../../defaults.json).
+```text
+DEFAULT INNER_THICKNESS=120mm BEARING_THICKNESS=300mm OUTER_THICKNESS=450mm
+```
+
+`DEFAULT` may appear once. `OUTER_THICKNESS` must be at least half of the larger inner or bearing thickness so that the exterior projection is nonnegative.
+
+Furniture depth defaults are specific to each furniture command and can be overridden with `DEPTH`.
+
+Use `plandl defaults --json` for the machine-readable wall defaults. A generated copy is also available at [defaults.json](../../defaults.json).

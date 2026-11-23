@@ -1,7 +1,7 @@
 {
   "name": "@plandl/core",
   "version": "0.1.0",
-  "description": "PlanDL types, defaults, resolver, and geometry validator",
+  "description": "PlanDL types, defaults, grid resolver, inference, and validator",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

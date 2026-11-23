@@ -1,24 +1,15 @@
 ---
-title: Auto-extending walls
+title: Compound rooms
 ---
 
-![Exterior and internal walls resolved by auto-extension](../auto-extend.svg)
+![Bedroom with a merged wardrobe](../auto-extend.svg)
 
-`west` closes the exterior shell without an explicit `LENGTH`. The first internal partition extends to the north exterior. The second then stops at the first partition, producing a T-junction rather than a crossing.
+`Bedroom` merges `Wardrobe`, so the shared wall is omitted and the parent's inferred area includes both components. The furniture remains attached to a named component or compound wall.
 
 ```text
-LET house_width = 10000mm
-LET house_depth = 10000mm
-LET partition_offset = 4000mm
-LET horizontal_offset = 6000mm
-
-WALL EXTERNAL south "South exterior" DIRECTION 90 LENGTH house_width
-WALL EXTERNAL east "East exterior" START south.end DIRECTION 0 LENGTH house_depth
-WALL EXTERNAL north "North exterior" START east.end DIRECTION 270 LENGTH house_width
-WALL EXTERNAL west "West exterior" START north.end DIRECTION 180
-WALL INTERNAL vertical_partition "Vertical partition" START south.at(partition_offset) DIRECTION 0
-WALL INTERNAL horizontal_partition "Horizontal partition" START west.at(horizontal_offset) DIRECTION 90
-ROOM southwest "Southwest room" WALLS [south, vertical_partition, horizontal_partition, west]
-ROOM northwest "Northwest room" WALLS [horizontal_partition, vertical_partition, north, west]
-ROOM east_room "East room" WALLS [south, east, north, vertical_partition]
+GRID STEPS_X=[2m,2m] STEPS_Y=[3m,0.6m]
+ROOM NAME=Wardrobe X=[0,1] Y=[1,2] INFER INNER_DIMENSIONS=[1.9m,0.55m] AREA=1.045sqm
+ROOM NAME=Bedroom X=[0,2] Y=[0,1] MERGE=[Wardrobe] INFER AREA=12.4525sqm
+BED WALL=Bedroom_SOUTH OFFSET=1m PADDING=50mm WIDTH=1.8m
+CABINET WALL=Wardrobe_NORTH OFFSET=100mm WIDTH=1.5m DEPTH=500mm
 ```

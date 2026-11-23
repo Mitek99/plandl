@@ -1,7 +1,3 @@
-export type WallType = "EXTERNAL" | "INTERNAL" | "VIRTUAL" | "TERRACE";
-export type DoorType = "INTERNAL" | "EXTERNAL";
-export type Side = "LEFT" | "RIGHT";
-
 export interface SourceLocation {
   line: number;
   column: number;
@@ -14,89 +10,101 @@ export interface Diagnostic {
   location?: SourceLocation;
 }
 
-export type Expression =
-  | { kind: "number"; value: number }
-  | { kind: "identifier"; name: string }
-  | { kind: "unary"; operator: "+" | "-"; operand: Expression }
-  | { kind: "binary"; operator: "+" | "-" | "*" | "/"; left: Expression; right: Expression };
+export type ScalarUnit = "mm" | "cm" | "m" | "sqm";
 
-export interface WallAnchor {
-  wallId: string;
-  point: "start" | "end" | "at";
-  offset?: Expression;
+export interface Scalar {
+  value: number;
+  unit?: ScalarUnit;
+  raw: string;
+  location: SourceLocation;
 }
+
+export type ParameterValue = string | Scalar | Array<string | Scalar>;
+export type InferredProperties = Record<string, ParameterValue>;
 
 interface DefinitionBase {
-  id: string;
-  name: string;
   location: SourceLocation;
 }
 
-export interface LetDefinition {
-  kind: "let";
-  id: string;
-  expression: Expression;
-  location: SourceLocation;
-}
-
-export interface WallDefinition extends DefinitionBase {
-  kind: "wall";
-  wallType: WallType;
-  start?: WallAnchor;
-  direction: Expression;
-  length?: Expression;
-  thickness?: Expression;
-  height?: Expression;
+export interface GridDefinition extends DefinitionBase {
+  kind: "grid";
+  stepsX: Scalar[];
+  stepsY: Scalar[];
+  inferred: InferredProperties;
 }
 
 export interface RoomDefinition extends DefinitionBase {
-  kind: "room";
-  wallIds: string[];
+  kind: "room" | "terrace";
+  name: string;
+  x: [Scalar, Scalar];
+  y: [Scalar, Scalar];
+  merge: string[];
+  inferred: InferredProperties;
 }
 
-interface AttachedDefinitionBase extends DefinitionBase {
-  hostId?: string;
-  offset: Expression;
-  side: Side;
+export interface DefaultDefinition extends DefinitionBase {
+  kind: "default";
+  innerThickness?: Scalar;
+  bearingThickness?: Scalar;
+  outerThickness?: Scalar;
 }
 
-export interface DoorDefinition extends AttachedDefinitionBase {
-  kind: "door";
-  doorType: DoorType;
-  width?: Expression;
-  height?: Expression;
-  openingType: string;
+export interface BearingDefinition extends DefinitionBase {
+  kind: "bearing";
+  x: Scalar[];
+  y: Scalar[];
 }
 
-export interface WindowDefinition extends AttachedDefinitionBase {
-  kind: "window";
-  width: Expression;
-  height?: Expression;
-  sillHeight?: Expression;
+export const FURNITURE_TYPES = [
+  "BED",
+  "DESK",
+  "CABINET",
+  "SINK",
+  "FRIDGE",
+  "OVEN",
+  "SOFA",
+  "TABLE",
+  "ISLAND",
+  "TOILET",
+  "SHOWER",
+  "BATHTUB"
+] as const;
+
+export type FurnitureType = typeof FURNITURE_TYPES[number];
+export type WallSide = "NORTH" | "SOUTH" | "EAST" | "WEST";
+
+export interface FurnitureDefinition extends DefinitionBase {
+  kind: "furniture";
+  furnitureType: FurnitureType;
+  wall: string;
+  offset: Scalar;
+  padding?: Scalar;
+  width: Scalar;
+  depth?: Scalar;
 }
 
-export interface OpeningDefinition extends AttachedDefinitionBase {
+export type OpeningCommand = "WINDOW" | "DOOR" | "OPENING";
+export type DoorHinge = "LEFT" | "RIGHT";
+export type DoorSwing = "INWARD" | "OUTWARD";
+
+export interface OpeningDefinition extends DefinitionBase {
   kind: "opening";
-  width: Expression;
-  height?: Expression;
-  openingType: string;
-}
-
-export interface ObjectDefinition extends AttachedDefinitionBase {
-  kind: "object";
-  objectType: string;
-  gap?: Expression;
-  size?: [Expression, Expression];
+  openingType: OpeningCommand;
+  wall: string;
+  offset: Scalar;
+  width: Scalar;
+  hinge?: DoorHinge;
+  swing?: DoorSwing;
+  isInferred: boolean;
 }
 
 export type Definition =
-  | LetDefinition
-  | WallDefinition
+  | GridDefinition
   | RoomDefinition
-  | DoorDefinition
-  | WindowDefinition
-  | OpeningDefinition
-  | ObjectDefinition;
+  | DefaultDefinition
+  | BearingDefinition
+  | FurnitureDefinition
+  | OpeningDefinition;
 
 export interface PlanDocument {
   definitions: Definition[];
@@ -107,62 +115,85 @@ export interface Point {
   y: number;
 }
 
-export interface ResolvedWall extends DefinitionBase {
-  type: WallType;
+export interface WallDefaults {
+  innerThickness: number;
+  bearingThickness: number;
+  outerThickness: number;
+}
+
+export interface ResolvedGrid {
+  x: number[];
+  y: number[];
+  outerDimensions: [number, number];
+  outerArea: number;
+  perimeter: number;
+  location: SourceLocation;
+}
+
+export interface ResolvedRoom {
+  name: string;
+  type: "ROOM" | "TERRACE";
+  x: [number, number];
+  y: [number, number];
+  bounds: { minX: number; maxX: number; minY: number; maxY: number };
+  merge: string[];
+  compound: string;
+  innerDimensions?: [number, number];
+  area: number;
+  location: SourceLocation;
+}
+
+export interface ResolvedWall {
   start: Point;
   end: Point;
-  direction: number;
-  length: number;
-  autoLength: boolean;
+  type: "INNER" | "OUTER" | "TERRACE";
+  bearing: boolean;
   thickness: number;
-  height: number;
+  inside: number;
+  outside: number;
+  interiorSide?: "LEFT" | "RIGHT";
+  rooms: string[];
 }
 
-interface ResolvedAttachedBase extends DefinitionBase {
-  hostId: string;
+export interface ResolvedFurniture {
+  type: FurnitureType;
+  wall: string;
+  room: string;
+  side: WallSide;
   offset: number;
-  side: Side;
-}
-
-export interface ResolvedDoor extends ResolvedAttachedBase {
-  type: DoorType;
+  padding: number;
   width: number;
-  height: number;
-  openingType: string;
+  depth: number;
+  footprint: Point[];
+  location: SourceLocation;
 }
 
-export interface ResolvedWindow extends ResolvedAttachedBase {
+export interface ResolvedOpening {
+  type: OpeningCommand;
+  wall: string;
+  room: string;
+  component: string;
+  side: WallSide;
+  offset: number;
   width: number;
-  height: number;
-  sillHeight: number;
-}
-
-export interface ResolvedOpening extends ResolvedAttachedBase {
-  width: number;
-  height: number;
-  openingType: string;
-}
-
-export interface ResolvedObject extends ResolvedAttachedBase {
-  objectType: string;
-  gap: number;
-  size: [number, number];
-}
-
-export interface ResolvedRoom extends DefinitionBase {
-  wallIds: string[];
-  boundary: Point[];
-  area: number;
+  hinge?: DoorHinge;
+  swing?: DoorSwing;
+  start: Point;
+  end: Point;
+  wallThickness: number;
+  inferred: boolean;
+  inferredFrom?: string;
+  location: SourceLocation;
 }
 
 export interface ResolvedPlan {
-  variables: Record<string, number>;
-  walls: ResolvedWall[];
+  grid?: ResolvedGrid;
+  defaults: WallDefaults;
   rooms: ResolvedRoom[];
-  doors: ResolvedDoor[];
-  windows: ResolvedWindow[];
+  terraces: ResolvedRoom[];
+  walls: ResolvedWall[];
+  furniture: ResolvedFurniture[];
   openings: ResolvedOpening[];
-  objects: ResolvedObject[];
   diagnostics: Diagnostic[];
 }
 

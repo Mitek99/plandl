@@ -3,40 +3,53 @@ title: Geometry and validation
 weight: 4
 ---
 
-## Reference faces and directions
+## Grid coordinates
 
-Every wall has a directed reference face from start to end. The left face is the reference face, and physical thickness extends to the right. `LEFT` and `RIGHT` always assume the observer is looking from wall start toward wall end.
+The grid begins at zero. Each entry in `STEPS_X` or `STEPS_Y` adds one grid line after accumulating that step. For example, `[3m,2m,3m]` produces X coordinates 0, 3m, 5m, and 8m.
 
-Wall length and attachment offsets run along the reference face. Opening offsets target the leading edge nearest the wall start, not the opening center. Furniture clearance is measured from the selected physical face.
+Rooms select rectangles using grid-line indices, not lengths. `X=[1,3]` in that grid selects the span from X=3m to X=8m. Rectangles must be nonempty and cannot overlap other declared rooms or terraces.
 
-Exterior shell walls run counter-clockwise with the building interior on their `LEFT`. Their declared length is measured along the interior reference face, and thickness extends outward to the `RIGHT`. Consequently, four 10 m exterior walls with 0.5 m thickness describe a 10 × 10 m interior with 100 m² internal area and an 11 × 11 m exterior.
+## Wall thickness
 
-## Auto-extending walls
+Inner and bearing walls are centered on their grid lines. Their default thicknesses are 100mm and 250mm respectively.
 
-Omitting `LENGTH` casts a ray from the wall start along its direction. The wall stops at the nearest intersection with an explicitly sized wall, even when that obstacle is declared later. Auto walls then become obstacles in source order: the first auto wall extends, and a later auto wall can stop at it, forming a T-junction rather than a crossing.
+Outer walls use an asymmetric placement so an outer wall can continue into an internal partition without a step on the interior surface:
 
-The nearest intersection must be farther than the wall's own start. A wall that hits nothing is invalid and reports `UNTERMINATED_WALL`. Resolved JSON records both the derived length and `autoLength: true`. Attachment spans and `.at(offset)` references are checked after auto-extension.
+- On a non-bearing line, half of `INNER_THICKNESS` is inside the building. The default is 50mm.
+- On a bearing line, half of `BEARING_THICKNESS` is inside. The default is 125mm.
+- The remainder of `OUTER_THICKNESS` is outside. The defaults therefore give 350mm outside on a non-bearing line and 275mm on a bearing line.
 
-## Connected wall graph
+Grid outer dimensions include these exterior projections on both sides. An 8m × 4m grid with default non-bearing boundary lines consequently has 8.7m × 4.7m outer dimensions, a 40.89m² outer area, and a 26.8m perimeter.
 
-The first wall establishes the plan's implicit origin. Every other wall attaches to an earlier wall, so one source file describes one connected wall graph. Dependencies are sequential: later declarations cannot be referenced, and dependency cycles cannot be expressed.
+Terrace outer walls have zero thickness. A wall between a room and a terrace uses outer-wall placement on the room side.
 
-## T-junctions
+## Compound spaces
 
-Authors do not split a wall at a T-junction. The validator internally splits walls wherever another wall endpoint meets them. Different rooms can therefore reference the same exterior wall while using different portions of it.
+Merging spaces suppresses walls between members of the same compound. A compound parent's inferred area is the aggregate of its members, including the strips opened by removing their shared walls. It has no single inner-dimensions pair.
 
-A room's wall set must select exactly one bounded face. Extra boundaries produce an ambiguity error; an open loop produces a closure error.
+Merges must connect spaces of the same command type. A child can have only one parent, and cycles are rejected.
+
+## Furniture coordinates
+
+Furniture uses a local wall coordinate system. Offset and width run along the inner wall face from its lowest X or Y coordinate; padding and depth run into the room. A bed's headboard is therefore at the padding line, regardless of which compass wall hosts it.
+
+## Openings
+
+Windows, doors, and openings use the same inner wall coordinates as furniture. Their resolved `start` and `end` points lie on the grid centerline so the renderer can cut through the complete wall thickness.
+
+An inner door has two resolved definitions: the explicit source definition and an inferred definition for the adjoining room. Both refer to the same physical span. The inferred hinge and swing account for viewing the wall from the opposite side, so both definitions render one consistent door leaf.
 
 ## Validation
 
 The resolver checks, among other rules:
 
-- Unknown, duplicate, and forward references.
-- Invalid lengths, offsets, sizes, and expressions.
-- Wall crossings and collinear overlaps.
-- Room closure and ambiguous room boundaries.
-- Attachments extending beyond their host wall.
-- Windows and openings extending above their host wall.
-- Physical attachments to virtual walls.
+- Exactly one leading grid and valid positive steps.
+- Unitless, in-range grid indices and nonempty room ranges.
+- Duplicate names and overlapping spaces.
+- Unknown, mixed-type, repeated, and cyclic merges.
+- Positive thicknesses and sufficient outer thickness.
+- Valid wall references, lengths, offsets, padding, and furniture sizes.
+- Furniture extending beyond its selected wall segment or room.
+- Openings extending beyond their selected wall or an adjoining room.
 
-Normalized JSON always includes explicit resolved hosts and geometry, making downstream consumption independent of source-order conveniences.
+Normalized JSON includes resolved grid coordinates, room bounds, aggregate areas, wall geometry, furniture footprints, and structured diagnostics.

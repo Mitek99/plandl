@@ -1,43 +1,62 @@
-export const PLANDL_SPEC = `PlanDL 0.1
+export const PLANDL_SPEC = `PlanDL 0.2
 
-PlanDL is a small, line-oriented DSL for relative spatial plans. It is not a BIM format.
+PlanDL is a line-oriented DSL for rectangular grid-based floor plans.
 
 LEXICAL RULES
 - One definition per line. Blank lines and lines starting with # are ignored.
-- Reserved words are uppercase. IDs use lowercase letters, digits, and underscores.
-- Names and descriptions are double-quoted strings.
-- Lengths accept mm, cm, and m suffixes. Unitless numbers are millimetres.
-- Directions are degrees clockwise from up: 0 up, 90 right, 180 down, 270 left.
-- LEFT and RIGHT are relative to looking from wall start toward wall end.
+- Every line starts with an uppercase command followed by space-separated parameters.
+- Parameters are KEY=value or the INFER modifier. Values are strings, scalars, or arrays.
+- Strings may be bare words or double-quoted strings. Arrays use commas: [one,two].
+- Lengths accept mm, cm, and m suffixes. Unitless lengths are millimetres.
+- Areas accept sqm. Grid indices are unitless integers.
 
 DEFINITIONS
-LET id = expression
-WALL <EXTERNAL|INTERNAL|VIRTUAL|TERRACE> id "name" [START anchor] [THICKNESS length] [HEIGHT length] DIRECTION degrees [LENGTH length]
-ROOM id "name" WALLS [wall_id, ...]
-DOOR <INTERNAL|EXTERNAL> id "name" [ON wall_id] OFFSET length [WIDTH length] [HEIGHT length] SIDE <LEFT|RIGHT> OPENING_TYPE type
-WINDOW id "name" [ON wall_id] OFFSET length WIDTH length [HEIGHT length] [SILL_HEIGHT length] SIDE <LEFT|RIGHT>
-OPENING id "name" [ON wall_id] OFFSET length WIDTH length [HEIGHT length] SIDE <LEFT|RIGHT> OPENING_TYPE type
-OBJECT id "name" KIND kind [ON wall_id] OFFSET length SIDE <LEFT|RIGHT> [GAP length] SIZE along X depth
+GRID STEPS_X=[length,...] STEPS_Y=[length,...] [INFER OUTER_DIMENSIONS=[length,length] OUTER_AREA=area PERIMETER=length]
+ROOM NAME=name X=[start_index,end_index] Y=[start_index,end_index] [MERGE=[name,...]] [INFER INNER_DIMENSIONS=[length,length] AREA=area]
+TERRACE NAME=name X=[start_index,end_index] Y=[start_index,end_index] [MERGE=[name,...]] [INFER INNER_DIMENSIONS=[length,length] AREA=area]
+DEFAULT [INNER_THICKNESS=length] [BEARING_THICKNESS=length] [OUTER_THICKNESS=length]
+BEARING [X=[grid_index,...]] [Y=[grid_index,...]]
+BED|DESK|CABINET|SINK|FRIDGE|OVEN|SOFA|TABLE|ISLAND|TOILET|SHOWER|BATHTUB WALL=RoomName_SIDE OFFSET=length [PADDING=length] WIDTH=length [DEPTH=length]
+WINDOW WALL=RoomName_SIDE OFFSET=length WIDTH=length
+DOOR WALL=RoomName_SIDE OFFSET=length WIDTH=length [HINGE=LEFT|RIGHT] [OPENING=INWARD|OUTWARD]
+OPENING WALL=RoomName_SIDE OFFSET=length WIDTH=length
+[INFER] WINDOW|DOOR|OPENING ...
 
-ANCHORS
-START wall_id.start
-START wall_id.end
-START wall_id.at(offset)
+GRID AND ROOMS
+- GRID is the first and only grid definition. Coordinates start at zero and each step adds one grid line.
+- ROOM and TERRACE bounds are grid-line index ranges. Walls cannot be off-grid.
+- The Y axis points north. Room and terrace names are unique.
+- MERGE creates a compound space. Rooms merge only rooms and terraces merge only terraces.
+- A space can be merged by only one parent. Unknown merges and merge cycles are invalid.
+- Distinct spaces cannot overlap.
 
-SEMANTICS
-- The first wall starts at an implicit origin. Absolute coordinates are not part of PlanDL.
-- Every later wall must reference an earlier wall. Forward references and dependency cycles are invalid.
-- Variables are sequential. Built-in default_ variables are read-only.
-- Wall lengths and attached offsets use the directed reference face. Opening offsets target the leading edge.
-- Exterior shells run counter-clockwise with the interior on LEFT; lengths use interior faces and thickness extends outward.
-- Omitted LENGTH auto-extends to the nearest explicit obstacle. Auto walls are obstacles in source order, so the next auto wall can form a T-junction with the previous one. No intersection is UNTERMINATED_WALL.
-- Omitting ON uses the closest preceding WALL definition.
-- T-junctions split walls internally. Rooms may use different subsegments of one source wall.
-- A room's wall references must select exactly one closed, non-self-intersecting boundary.
-- Walls must not cross or overlap.
-- VIRTUAL walls are zero-thickness, zero-height, fully open logical boundaries.
-- TERRACE walls represent guardrails.
-- The left face is the reference face; physical wall thickness extends to its right.
+WALLS
+- INNER_THICKNESS defaults to 100mm, BEARING_THICKNESS to 250mm, and OUTER_THICKNESS to 400mm.
+- BEARING marks complete vertical X or horizontal Y grid lines as bearing.
+- Inner and bearing walls are centered on their grid lines.
+- An outer wall extends half the inner thickness inside, or half the bearing thickness on a bearing line.
+- The rest of OUTER_THICKNESS extends outside. Thus a default non-bearing outer wall is 50mm inside and 350mm outside.
+- Walls between components of one compound space are omitted. Terrace outer walls have zero thickness.
+
+INFERENCE
+- INFER marks all following properties as compiler-derived. Source inference values are advisory; normalized output always uses recomputed values.
+- Grid outer dimensions include exterior thickness outside the outermost grid lines, including bearing-line adjustments.
+- Room inner dimensions subtract the applicable inside wall thickness. AREA is in square millimetres in resolved JSON.
+- Compound parents have aggregate AREA and no single INNER_DIMENSIONS value.
+
+FURNITURE
+- SIDE is NORTH, SOUTH, EAST, or WEST. OFFSET runs along the inner wall face from its lowest X or Y coordinate.
+- PADDING is the gap from the inner wall face. WIDTH runs along the wall and DEPTH extends into the room.
+- DEPTH is optional and uses the furniture type's standard depth.
+- Furniture must fit within one wall segment and within the room perpendicular to that wall.
+
+WINDOWS, DOORS, AND OPENINGS
+- OFFSET and WIDTH use the same inner wall coordinates as furniture. Openings must fit on the selected wall.
+- DOOR HINGE is LEFT or RIGHT as seen from inside the named room and defaults to LEFT.
+- DOOR OPENING is INWARD or OUTWARD relative to the named room and defaults to INWARD.
+- A DOOR on an inner wall generates an inferred DOOR for the adjoining room with the opposite side, mirrored HINGE and OPENING values, and a recomputed OFFSET.
+- Leading INFER marks a complete compiler-generated opening definition. Inferred openings do not generate another counterpart.
+- Resolved JSON includes explicit and inferred openings with centerline geometry and an inferred flag.
 
 COMMANDS
 plandl check <file> [--json]

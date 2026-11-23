@@ -3,14 +3,14 @@ title: Tooling
 weight: 6
 ---
 
-PlanDL uses ArchLang's tooling philosophy as a reference: deterministic output, normalized data, structured diagnostics, generated examples, and a compact specification suitable for agent workflows. Its implementation and scope are intentionally much smaller.
+PlanDL provides deterministic output, normalized data, structured diagnostics, generated examples, and a compact specification suitable for agent workflows.
 
 ## npm workspaces
 
 | Package | Responsibility |
 |---|---|
-| `@plandl/parser` | Tokenizes and parses the line-oriented source into an AST. |
-| `@plandl/core` | Provides types, defaults, sequential resolution, normalized JSON, and geometric validation. |
+| `@plandl/parser` | Tokenizes and parses line-oriented commands and `KEY=value` parameters into an AST. |
+| `@plandl/core` | Provides types, defaults, grid and room resolution, inference, normalized JSON, and validation. |
 | `@plandl/renderer` | Produces deterministic SVG from a valid resolved plan. |
 | `@plandl/cli` | Exposes the parser, resolver, validator, and renderer as command-line tools. |
 | `@plandl/playground` | Runs the same packages in the browser for the front-page live editor. |
@@ -31,10 +31,8 @@ In this repository, invoke the CLI with `node modules/cli/dist/cli.js` after `np
 
 ## Furniture symbols
 
-The renderer includes a deliberately small pictogram catalogue: `COUNTER`, `SOFA`, `TABLE`, `BED`, `SINK`, `CHAIR`, `WC`, `BATH`, `WARDROBE`, and `STOVE`. Symbols use the declared footprint and rotate with the host wall. Beds include pillows and duvet folds, dining tables include six chairs, and counters and bathroom fittings include recognizable details.
-
-Unknown object kinds retain the simple labelled-rectangle fallback. The catalogue is not intended to match ArchLang's broader fixture coverage.
+The renderer includes pictograms for `BED`, `DESK`, `CABINET`, `SINK`, `FRIDGE`, `OVEN`, `SOFA`, `TABLE`, `ISLAND`, `TOILET`, `SHOWER`, and `BATHTUB`. Symbols use the declared footprint and rotate to point into the room from the host wall.
 
 ## Deliberate non-goals
 
-The current toolchain does not attempt DXF/PDF export, IFC/BIM exchange, automatic layout, a runtime scripting language, a plugin system, a large fixture catalogue, or architectural habitability analysis.
+The current toolchain does not attempt off-grid or curved geometry, DXF/PDF export, IFC/BIM exchange, automatic layout, a runtime scripting language, a plugin system, or architectural habitability analysis.

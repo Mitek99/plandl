@@ -1,4 +1,5 @@
-import type { Point, ResolvedObject, ResolvedPlan, ResolvedWall } from "@plandl/core";
+import { wallPoints } from "@plandl/core";
+import type { Point, ResolvedOpening, ResolvedPlan, ResolvedRoom } from "@plandl/core";
 import type { Frame } from "./frame.js";
 import { renderFurniture } from "./furniture.js";
 
@@ -8,23 +9,6 @@ function format(value: number): string {
 
 function escapeXml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-function vector(wall: ResolvedWall): { along: Point; left: Point; right: Point } {
-  const along = { x: (wall.end.x - wall.start.x) / wall.length, y: (wall.end.y - wall.start.y) / wall.length };
-  return {
-    along,
-    left: { x: -along.y, y: along.x },
-    right: { x: along.y, y: -along.x }
-  };
-}
-
-function add(point: Point, direction: Point, amount: number): Point {
-  return { x: point.x + direction.x * amount, y: point.y + direction.y * amount };
-}
-
-function at(wall: ResolvedWall, offset: number): Point {
-  return add(wall.start, vector(wall).along, offset);
 }
 
 function project(point: Point, frame: Frame): Point {
@@ -48,181 +32,170 @@ function line(start: Point, end: Point, frame: Frame, attributes: string): strin
   return `<line x1="${format(a.x)}" y1="${format(a.y)}" x2="${format(b.x)}" y2="${format(b.y)}" ${attributes}/>`;
 }
 
-function wallPolygon(wall: ResolvedWall): Point[] {
-  const { right } = vector(wall);
-  return [wall.start, wall.end, add(wall.end, right, wall.thickness), add(wall.start, right, wall.thickness)];
-}
-
-interface WallJoin {
-  points: Point[];
-  external: boolean;
+function text(point: Point, frame: Frame, value: string, size = 160, weight = 400): string {
+  const projected = project(point, frame);
+  return `<text x="${format(projected.x)}" y="${format(projected.y)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size}" font-weight="${weight}" fill="#1a202c">${escapeXml(value)}</text>`;
 }
 
 function endpointKey(point: Point): string {
   return `${Math.round(point.x * 1e7)}:${Math.round(point.y * 1e7)}`;
 }
 
-function faceIntersection(a: Point, aDirection: Point, b: Point, bDirection: Point): Point | null {
-  const denominator = aDirection.x * bDirection.y - aDirection.y * bDirection.x;
-  if (Math.abs(denominator) < 1e-7) return null;
-  const relative = { x: b.x - a.x, y: b.y - a.y };
-  const distance = (relative.x * bDirection.y - relative.y * bDirection.x) / denominator;
-  return add(a, aDirection, distance);
+function roomRectangle(room: ResolvedRoom): Point[] {
+  return [
+    { x: room.bounds.minX, y: room.bounds.minY },
+    { x: room.bounds.maxX, y: room.bounds.minY },
+    { x: room.bounds.maxX, y: room.bounds.maxY },
+    { x: room.bounds.minX, y: room.bounds.maxY }
+  ];
 }
 
-function wallJoins(walls: ResolvedWall[]): WallJoin[] {
-  const joins: WallJoin[] = [];
-  const physical = walls.filter((wall) => (wall.type === "EXTERNAL" || wall.type === "INTERNAL") && wall.thickness > 0);
-  for (let aIndex = 0; aIndex < physical.length; aIndex += 1) {
-    for (let bIndex = aIndex + 1; bIndex < physical.length; bIndex += 1) {
-      const a = physical[aIndex]!;
-      const b = physical[bIndex]!;
-      for (const aEndpoint of ["start", "end"] as const) {
-        for (const bEndpoint of ["start", "end"] as const) {
-          const joint = a[aEndpoint];
-          if (endpointKey(joint) !== endpointKey(b[bEndpoint])) continue;
-          const aVectors = vector(a);
-          const bVectors = vector(b);
-          const aFace = add(joint, aVectors.right, a.thickness);
-          const bFace = add(joint, bVectors.right, b.thickness);
-          const intersection = faceIntersection(aFace, aVectors.along, bFace, bVectors.along);
-          if (intersection) {
-            joins.push({
-              points: [joint, aFace, intersection, bFace],
-              external: a.type === "EXTERNAL" || b.type === "EXTERNAL"
-            });
-          }
-        }
-      }
+function wallJoins(plan: ResolvedPlan): Point[][] {
+  const endpoints = new Map<string, { walls: number; points: Point[] }>();
+  for (const wall of plan.walls) {
+    if (wall.thickness <= 0) continue;
+    const points = wallPoints(wall);
+    for (const [endpoint, indices] of [[wall.start, [0, 3]], [wall.end, [1, 2]]] as const) {
+      const key = endpointKey(endpoint);
+      const join = endpoints.get(key) ?? { walls: 0, points: [] };
+      join.walls += 1;
+      join.points.push(...indices.map((index) => points[index]!));
+      endpoints.set(key, join);
     }
+  }
+  const joins: Point[][] = [];
+  for (const join of endpoints.values()) {
+    if (join.walls < 2) continue;
+    const minX = Math.min(...join.points.map((point) => point.x));
+    const maxX = Math.max(...join.points.map((point) => point.x));
+    const minY = Math.min(...join.points.map((point) => point.y));
+    const maxY = Math.max(...join.points.map((point) => point.y));
+    joins.push([{ x: minX, y: minY }, { x: maxX, y: minY }, { x: maxX, y: maxY }, { x: minX, y: maxY }]);
   }
   return joins;
 }
 
-function gapPolygon(wall: ResolvedWall, offset: number, width: number): Point[] {
-  const { right } = vector(wall);
-  const start = at(wall, offset);
-  const end = at(wall, offset + width);
-  const depth = wall.thickness + 2;
-  return [add(start, right, -1), add(end, right, -1), add(end, right, depth), add(start, right, depth)];
+function openingGap(opening: ResolvedOpening): Point[] {
+  const dx = opening.end.x - opening.start.x;
+  const dy = opening.end.y - opening.start.y;
+  const length = Math.hypot(dx, dy);
+  const left = { x: -dy / length, y: dx / length };
+  const depth = Math.max(10, opening.wallThickness + 2);
+  const shift = (point: Point, amount: number): Point => ({ x: point.x + left.x * amount, y: point.y + left.y * amount });
+  return [shift(opening.start, depth), shift(opening.end, depth), shift(opening.end, -depth), shift(opening.start, -depth)];
 }
 
-function centroid(points: Point[]): Point {
-  let x = 0;
-  let y = 0;
-  let signed = 0;
-  for (let index = 0; index < points.length; index += 1) {
-    const next = (index + 1) % points.length;
-    const factor = points[index]!.x * points[next]!.y - points[next]!.x * points[index]!.y;
-    signed += factor;
-    x += (points[index]!.x + points[next]!.x) * factor;
-    y += (points[index]!.y + points[next]!.y) * factor;
-  }
-  if (Math.abs(signed) < 1e-7) return points[0] ?? { x: 0, y: 0 };
-  return { x: x / (3 * signed), y: y / (3 * signed) };
+function inwardNormal(opening: ResolvedOpening): Point {
+  if (opening.side === "SOUTH") return { x: 0, y: 1 };
+  if (opening.side === "NORTH") return { x: 0, y: -1 };
+  if (opening.side === "WEST") return { x: 1, y: 0 };
+  return { x: -1, y: 0 };
 }
 
-function objectPolygon(object: ResolvedObject, host: ResolvedWall): Point[] {
-  const { along, left, right } = vector(host);
-  const normal = object.side === "LEFT" ? left : right;
-  const faceOffset = object.side === "RIGHT" ? host.thickness + object.gap : object.gap;
-  const start = add(at(host, object.offset), normal, faceOffset);
-  const end = add(start, along, object.size[0]);
-  return [start, end, add(end, normal, object.size[1]), add(start, normal, object.size[1])];
-}
-
-function text(point: Point, frame: Frame, value: string, size = 160, weight = 400): string {
-  const projected = project(point, frame);
-  return `<text x="${format(projected.x)}" y="${format(projected.y)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size}" font-weight="${weight}" fill="#1a202c">${escapeXml(value)}</text>`;
+function doorLeaf(opening: ResolvedOpening): { hinge: Point; end: Point } {
+  const leftAtEnd = opening.side === "SOUTH" || opening.side === "EAST";
+  const atEnd = opening.hinge === "LEFT" ? leftAtEnd : !leftAtEnd;
+  const hinge = atEnd ? opening.end : opening.start;
+  const inward = inwardNormal(opening);
+  const direction = opening.swing === "INWARD" ? 1 : -1;
+  return {
+    hinge,
+    end: { x: hinge.x + inward.x * opening.width * direction, y: hinge.y + inward.y * opening.width * direction }
+  };
 }
 
 export function renderSvg(plan: ResolvedPlan): string {
   if (plan.diagnostics.some((diagnostic) => diagnostic.severity === "error")) {
     throw new Error("Cannot render a plan with validation errors.");
   }
-  const hosts = new Map(plan.walls.map((wall) => [wall.id, wall]));
-  const joins = wallJoins(plan.walls);
-  const objectPolygons = plan.objects.map((object) => ({ object, points: objectPolygon(object, hosts.get(object.hostId)!) }));
+  if (!plan.grid) throw new Error("Cannot render a plan without a grid.");
+
+  const joins = wallJoins(plan);
+  const spaces = [...plan.rooms, ...plan.terraces];
   const allPoints = [
-    ...plan.walls.filter((wall) => wall.type !== "VIRTUAL").flatMap(wallPolygon),
+    ...spaces.flatMap(roomRectangle),
+    ...plan.walls.flatMap(wallPoints),
     ...plan.walls.flatMap((wall) => [wall.start, wall.end]),
-    ...joins.flatMap((join) => join.points),
-    ...objectPolygons.flatMap((entry) => entry.points)
+    ...joins.flat(),
+    ...plan.furniture.flatMap((furniture) => furniture.footprint),
+    ...plan.openings.flatMap(openingGap),
+    ...plan.openings.filter((opening) => opening.type === "DOOR").flatMap((opening) => {
+      const leaf = doorLeaf(opening);
+      return [leaf.hinge, leaf.end];
+    })
   ];
+  if (allPoints.length === 0) {
+    allPoints.push(
+      { x: 0, y: 0 },
+      { x: plan.grid.x[plan.grid.x.length - 1]!, y: plan.grid.y[plan.grid.y.length - 1]! }
+    );
+  }
   const minX = Math.min(...allPoints.map((point) => point.x));
   const maxX = Math.max(...allPoints.map((point) => point.x));
   const minY = Math.min(...allPoints.map((point) => point.y));
   const maxY = Math.max(...allPoints.map((point) => point.y));
   const margin = 500;
   const frame: Frame = { minX, maxY, margin };
-  const width = maxX - minX + margin * 2;
-  const height = maxY - minY + margin * 2;
+  const width = Math.max(1, maxX - minX + margin * 2);
+  const height = Math.max(1, maxY - minY + margin * 2);
   const pixelHeight = Math.max(1, Math.round(1200 * height / width));
   const output: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${pixelHeight}" viewBox="0 0 ${format(width)} ${format(height)}" role="img" aria-labelledby="title">`,
-    `<title id="title">PlanDL spatial plan</title>`,
+    `<title id="title">PlanDL floor plan</title>`,
     `<rect width="100%" height="100%" fill="white"/>`
   ];
 
-  for (const room of plan.rooms) {
-    if (room.boundary.length > 0) {
-      output.push(polygon(room.boundary, frame, 'fill="#f7fafc" stroke="none"'));
-    }
+  for (const room of spaces) {
+    output.push(polygon(roomRectangle(room), frame, `fill="${room.type === "ROOM" ? "#f7fafc" : "#edf2f7"}" stroke="none"`));
   }
   for (const wall of plan.walls) {
-    if (wall.type === "VIRTUAL") {
-      output.push(line(wall.start, wall.end, frame, 'stroke="#a0aec0" stroke-width="18" stroke-dasharray="100 70"'));
-    } else if (wall.type === "TERRACE") {
-      output.push(polygon(wallPolygon(wall), frame, 'fill="#e2e8f0" stroke="#4a5568" stroke-width="14"'));
-      const count = Math.max(1, Math.floor(wall.length / 600));
-      for (let index = 0; index <= count; index += 1) {
-        const point = at(wall, wall.length * index / count);
-        output.push(line(point, add(point, vector(wall).right, wall.thickness), frame, 'stroke="#2d3748" stroke-width="24"'));
-      }
+    if (wall.type === "TERRACE") {
+      output.push(line(wall.start, wall.end, frame, 'stroke="#718096" stroke-width="18"'));
     } else {
-      output.push(polygon(wallPolygon(wall), frame, `fill="${wall.type === "EXTERNAL" ? "#2d3748" : "#4a5568"}" stroke="none"`));
+      output.push(polygon(wallPoints(wall), frame, `fill="${wall.type === "OUTER" ? "#2d3748" : "#4a5568"}" stroke="none"`));
     }
   }
   for (const join of joins) {
-    output.push(polygon(join.points, frame, `data-wall-join="true" fill="${join.external ? "#2d3748" : "#4a5568"}" stroke="none"`));
+    output.push(polygon(join, frame, 'fill="#2d3748" stroke="none"'));
   }
-
   for (const opening of plan.openings) {
-    const host = hosts.get(opening.hostId)!;
-    output.push(polygon(gapPolygon(host, opening.offset, opening.width), frame, 'fill="white" stroke="none"'));
-    output.push(line(at(host, opening.offset), add(at(host, opening.offset), vector(host).right, host.thickness), frame, 'stroke="#4a5568" stroke-width="18"'));
-    output.push(line(at(host, opening.offset + opening.width), add(at(host, opening.offset + opening.width), vector(host).right, host.thickness), frame, 'stroke="#4a5568" stroke-width="18"'));
-  }
-  for (const window of plan.windows) {
-    const host = hosts.get(window.hostId)!;
-    output.push(polygon(gapPolygon(host, window.offset, window.width), frame, 'fill="white" stroke="none"'));
-    output.push(line(at(host, window.offset), at(host, window.offset + window.width), frame, 'stroke="#3182ce" stroke-width="24"'));
-    output.push(line(add(at(host, window.offset), vector(host).right, host.thickness), add(at(host, window.offset + window.width), vector(host).right, host.thickness), frame, 'stroke="#3182ce" stroke-width="24"'));
-  }
-  for (const door of plan.doors) {
-    const host = hosts.get(door.hostId)!;
-    const { right, left } = vector(host);
-    const normal = door.side === "LEFT" ? left : right;
-    const face = door.side === "RIGHT" ? host.thickness : 0;
-    output.push(polygon(gapPolygon(host, door.offset, door.width), frame, 'fill="white" stroke="none"'));
-    const hinge = add(at(host, door.offset), normal, face);
-    output.push(line(hinge, add(hinge, normal, door.width), frame, 'stroke="#2f855a" stroke-width="24"'));
-    output.push(line(at(host, door.offset + door.width), add(at(host, door.offset + door.width), right, host.thickness), frame, 'stroke="#4a5568" stroke-width="18"'));
-  }
-  for (const entry of objectPolygons) {
-    const furniture = renderFurniture(entry.object, hosts.get(entry.object.hostId)!, frame);
-    if (furniture) {
-      output.push(furniture);
-    } else {
-      output.push(polygon(entry.points, frame, 'fill="#edf2f7" stroke="#4a5568" stroke-width="16"'));
-      output.push(text(centroid(entry.points), frame, entry.object.name, 130));
+    const gap = openingGap(opening);
+    output.push(polygon(gap, frame, 'fill="white" stroke="none"'));
+    output.push(line(gap[0]!, gap[3]!, frame, 'stroke="#4a5568" stroke-width="18"'));
+    output.push(line(gap[1]!, gap[2]!, frame, 'stroke="#4a5568" stroke-width="18"'));
+    if (opening.type === "WINDOW") {
+      output.push(line(opening.start, opening.end, frame, 'stroke="#3182ce" stroke-width="24"'));
+      if (opening.wallThickness > 0) {
+        output.push(line(gap[0]!, gap[1]!, frame, 'stroke="#3182ce" stroke-width="18"'));
+        output.push(line(gap[3]!, gap[2]!, frame, 'stroke="#3182ce" stroke-width="18"'));
+      }
+    } else if (opening.type === "DOOR") {
+      const leaf = doorLeaf(opening);
+      output.push(line(leaf.hinge, leaf.end, frame, 'stroke="#2f855a" stroke-width="24"'));
     }
   }
-  for (const room of plan.rooms) {
-    if (room.boundary.length === 0) continue;
-    const center = centroid(room.boundary);
+  for (const furniture of plan.furniture) {
+    output.push(renderFurniture(furniture, frame));
+  }
+
+  const mergedChildren = new Set(spaces.flatMap((room) => room.merge));
+  for (const room of spaces) {
+    if (mergedChildren.has(room.name)) continue;
+    const members = spaces.filter((candidate) => candidate.compound === room.compound);
+    let weight = 0;
+    const center = { x: 0, y: 0 };
+    for (const member of members) {
+      const area = (member.bounds.maxX - member.bounds.minX) * (member.bounds.maxY - member.bounds.minY);
+      center.x += (member.bounds.minX + member.bounds.maxX) / 2 * area;
+      center.y += (member.bounds.minY + member.bounds.maxY) / 2 * area;
+      weight += area;
+    }
+    if (weight > 0) {
+      center.x /= weight;
+      center.y /= weight;
+    }
     output.push(text(center, frame, room.name, 180, 600));
-    output.push(text(add(center, { x: 0, y: 1 }, -220), frame, `${format(room.area / 1e6)} m²`, 140));
+    output.push(text({ x: center.x, y: center.y - 220 }, frame, `${format(room.area / 1e6)} m²`, 140));
   }
   output.push("</svg>");
   return `${output.join("\n")}\n`;

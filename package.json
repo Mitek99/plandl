@@ -2,7 +2,7 @@
   "name": "plandl",
   "version": "0.1.0",
   "private": true,
-  "description": "A small, strict, LLM-friendly language for relative spatial plans",
+  "description": "A small, strict, LLM-friendly language for grid-based floor plans",
   "type": "module",
   "workspaces": [
     "modules/*"

@@ -34,7 +34,7 @@ node modules/cli/dist/cli.js defaults --json
 node modules/cli/dist/cli.js spec
 ```
 
-`describe` emits normalized JSON with resolved coordinates, dimensions, hosts, room boundaries, areas, and diagnostics. The coordinates are compiler output; absolute coordinates are not accepted in PlanDL source.
+`describe` emits normalized JSON with resolved grid coordinates, room bounds, inferred dimensions and areas, wall geometry, furniture footprints, explicit and inferred openings, and diagnostics. Lengths use millimetres and areas use square millimetres.
 
 ## Build the documentation
 
@@ -43,4 +43,4 @@ npm run site:build
 npm run site:serve
 ```
 
-Site generation revalidates both examples before producing their SVGs. The production site is written to `docs/public/`.
+Site generation revalidates all examples before producing their SVGs. The production site is written to `docs/public/`.

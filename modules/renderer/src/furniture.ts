@@ -1,4 +1,4 @@
-import type { Point, ResolvedObject, ResolvedWall } from "@plandl/core";
+import type { ResolvedFurniture } from "@plandl/core";
 import type { Frame } from "./frame.js";
 
 const OUTLINE = 'fill="white" stroke="#2d3748" stroke-width="26" stroke-linejoin="round"';
@@ -25,33 +25,28 @@ function path(data: string, attributes = DETAIL): string {
   return `<path d="${data}" ${attributes}/>`;
 }
 
-function counter(width: number, height: number): string {
-  const shapes = [rect(0, 0, width, height)];
-  for (let index = 1; index < 4; index += 1) {
-    shapes.push(line(width * index / 4, 0, width * index / 4, height));
-  }
-  const burnerX = width * 0.14;
-  const burnerY = height * 0.3;
-  for (const x of [burnerX, width * 0.25]) {
-    for (const y of [burnerY, height * 0.7]) {
-      shapes.push(ellipse(x, y, width * 0.04, height * 0.14));
-    }
-  }
-  shapes.push(rect(width * 0.58, height * 0.2, width * 0.3, height * 0.6, FILLED_DETAIL, height * 0.1));
-  shapes.push(ellipse(width * 0.73, height * 0.5, width * 0.09, height * 0.2));
-  shapes.push(path(`M ${format(width * 0.73)} ${format(height * 0.18)} v ${format(-height * 0.12)} h ${format(width * 0.07)}`));
-  return shapes.join("");
+function bed(width: number, height: number): string {
+  return [
+    rect(0, 0, width, height, OUTLINE, Math.min(width, height) * 0.04),
+    rect(0, 0, width, height * 0.05, FILLED_DETAIL),
+    rect(width * 0.1, height * 0.09, width * 0.35, height * 0.17, FILLED_DETAIL, height * 0.04),
+    rect(width * 0.55, height * 0.09, width * 0.35, height * 0.17, FILLED_DETAIL, height * 0.04),
+    line(0, height * 0.36, width, height * 0.36),
+    path(`M 0 ${format(height * 0.42)} L ${format(width * 0.48)} ${format(height * 0.7)} L ${format(width)} ${format(height * 0.42)}`),
+    line(width * 0.48, height * 0.7, width * 0.48, height)
+  ].join("");
 }
 
 function sofa(width: number, height: number): string {
-  const shapes = [rect(0, 0, width, height, OUTLINE, height * 0.08)];
-  shapes.push(rect(0, 0, width, height * 0.2, FILLED_DETAIL, height * 0.05));
-  shapes.push(rect(0, height * 0.15, width * 0.1, height * 0.85, FILLED_DETAIL, height * 0.04));
-  shapes.push(rect(width * 0.9, height * 0.15, width * 0.1, height * 0.85, FILLED_DETAIL, height * 0.04));
+  const shapes = [
+    rect(0, 0, width, height, OUTLINE, height * 0.08),
+    rect(0, 0, width, height * 0.2, FILLED_DETAIL, height * 0.05),
+    rect(0, height * 0.15, width * 0.1, height * 0.85, FILLED_DETAIL, height * 0.04),
+    rect(width * 0.9, height * 0.15, width * 0.1, height * 0.85, FILLED_DETAIL, height * 0.04)
+  ];
   const cushions = width > 2200 ? 3 : 2;
   for (let index = 1; index < cushions; index += 1) {
-    const x = width * 0.1 + width * 0.8 * index / cushions;
-    shapes.push(line(x, height * 0.22, x, height * 0.9));
+    shapes.push(line(width * 0.1 + width * 0.8 * index / cushions, height * 0.22, width * 0.1 + width * 0.8 * index / cushions, height * 0.9));
   }
   shapes.push(line(width * 0.1, height * 0.82, width * 0.9, height * 0.82));
   return shapes.join("");
@@ -76,17 +71,6 @@ function table(width: number, height: number): string {
   return shapes.join("");
 }
 
-function bed(width: number, height: number): string {
-  const shapes = [rect(0, 0, width, height, OUTLINE, Math.min(width, height) * 0.04)];
-  shapes.push(rect(0, 0, width, height * 0.05, FILLED_DETAIL));
-  shapes.push(rect(width * 0.1, height * 0.09, width * 0.35, height * 0.17, FILLED_DETAIL, height * 0.04));
-  shapes.push(rect(width * 0.55, height * 0.09, width * 0.35, height * 0.17, FILLED_DETAIL, height * 0.04));
-  shapes.push(line(0, height * 0.36, width, height * 0.36));
-  shapes.push(path(`M 0 ${format(height * 0.42)} L ${format(width * 0.48)} ${format(height * 0.7)} L ${format(width)} ${format(height * 0.42)}`));
-  shapes.push(line(width * 0.48, height * 0.7, width * 0.48, height));
-  return shapes.join("");
-}
-
 function sink(width: number, height: number): string {
   return [
     rect(0, 0, width, height, OUTLINE, Math.min(width, height) * 0.05),
@@ -96,11 +80,7 @@ function sink(width: number, height: number): string {
   ].join("");
 }
 
-function chair(width: number, height: number): string {
-  return chairSymbol(0, 0, width, height);
-}
-
-function wc(width: number, height: number): string {
+function toilet(width: number, height: number): string {
   return [
     rect(width * 0.15, 0, width * 0.7, height * 0.25, FILLED_DETAIL, width * 0.05),
     ellipse(width * 0.5, height * 0.6, width * 0.38, height * 0.36, OUTLINE),
@@ -118,9 +98,9 @@ function bath(width: number, height: number): string {
   ].join("");
 }
 
-function wardrobe(width: number, height: number): string {
+function cabinet(width: number, height: number): string {
   const shapes = [rect(0, 0, width, height)];
-  const divisions = Math.max(3, Math.round(width / 250));
+  const divisions = Math.max(2, Math.round(width / 600));
   for (let index = 1; index < divisions; index += 1) {
     shapes.push(line(width * index / divisions, 0, width * index / divisions, height));
   }
@@ -128,48 +108,53 @@ function wardrobe(width: number, height: number): string {
   return shapes.join("");
 }
 
-function stove(width: number, height: number): string {
-  const shapes = [rect(0, 0, width, height)];
-  for (const x of [width * 0.28, width * 0.72]) {
-    for (const y of [height * 0.28, height * 0.72]) {
-      shapes.push(ellipse(x, y, width * 0.16, height * 0.16, OUTLINE));
-      shapes.push(ellipse(x, y, width * 0.09, height * 0.09));
-    }
-  }
-  return shapes.join("");
+function oven(width: number, height: number): string {
+  return [
+    rect(0, 0, width, height),
+    rect(width * 0.12, height * 0.3, width * 0.76, height * 0.58, FILLED_DETAIL, height * 0.03),
+    line(width * 0.12, height * 0.16, width * 0.88, height * 0.16),
+    ellipse(width * 0.25, height * 0.12, width * 0.04, height * 0.04),
+    ellipse(width * 0.75, height * 0.12, width * 0.04, height * 0.04)
+  ].join("");
 }
 
-function symbol(object: ResolvedObject): string | null {
-  const [width, height] = object.size;
-  switch (object.objectType) {
-    case "COUNTER": return counter(width, height);
-    case "SOFA": return sofa(width, height);
-    case "TABLE": return table(width, height);
-    case "BED": return bed(width, height);
-    case "SINK": return sink(width, height);
-    case "CHAIR": return chair(width, height);
-    case "WC": return wc(width, height);
-    case "BATH": return bath(width, height);
-    case "WARDROBE": return wardrobe(width, height);
-    case "STOVE": return stove(width, height);
-    default: return null;
+function shower(width: number, height: number): string {
+  return [
+    rect(0, 0, width, height),
+    line(0, 0, width, height),
+    line(width, 0, 0, height),
+    ellipse(width * 0.5, height * 0.5, width * 0.08, height * 0.08, FILLED_DETAIL)
+  ].join("");
+}
+
+function symbol(furniture: ResolvedFurniture): string {
+  const { width, depth } = furniture;
+  switch (furniture.type) {
+    case "BED": return bed(width, depth);
+    case "SOFA": return sofa(width, depth);
+    case "TABLE": return table(width, depth);
+    case "SINK": return sink(width, depth);
+    case "TOILET": return toilet(width, depth);
+    case "BATHTUB": return bath(width, depth);
+    case "CABINET":
+    case "FRIDGE": return cabinet(width, depth);
+    case "OVEN": return oven(width, depth);
+    case "SHOWER": return shower(width, depth);
+    case "DESK": return [rect(0, 0, width, depth), line(width * 0.1, depth * 0.25, width * 0.9, depth * 0.25)].join("");
+    case "ISLAND": return [rect(0, 0, width, depth, FILLED_DETAIL), rect(width * 0.08, depth * 0.08, width * 0.84, depth * 0.84)].join("");
   }
 }
 
-function transform(object: ResolvedObject, host: ResolvedWall, frame: Frame): string {
-  const along = { x: (host.end.x - host.start.x) / host.length, y: (host.end.y - host.start.y) / host.length };
-  const normal = object.side === "LEFT" ? { x: -along.y, y: along.x } : { x: along.y, y: -along.x };
-  const faceOffset = object.side === "RIGHT" ? host.thickness + object.gap : object.gap;
-  const start: Point = {
-    x: host.start.x + along.x * object.offset + normal.x * faceOffset,
-    y: host.start.y + along.y * object.offset + normal.y * faceOffset
-  };
+function transform(furniture: ResolvedFurniture, frame: Frame): string {
+  const start = furniture.footprint[0]!;
+  const end = furniture.footprint[1]!;
+  const last = furniture.footprint[3]!;
+  const along = { x: (end.x - start.x) / furniture.width, y: (end.y - start.y) / furniture.width };
+  const inward = { x: (last.x - start.x) / furniture.depth, y: (last.y - start.y) / furniture.depth };
   const projected = { x: start.x - frame.minX + frame.margin, y: frame.maxY - start.y + frame.margin };
-  return `matrix(${format(along.x)} ${format(-along.y)} ${format(normal.x)} ${format(-normal.y)} ${format(projected.x)} ${format(projected.y)})`;
+  return `matrix(${format(along.x)} ${format(-along.y)} ${format(inward.x)} ${format(-inward.y)} ${format(projected.x)} ${format(projected.y)})`;
 }
 
-export function renderFurniture(object: ResolvedObject, host: ResolvedWall, frame: Frame): string | null {
-  const content = symbol(object);
-  if (!content) return null;
-  return `<g data-furniture="${object.objectType}" transform="${transform(object, host, frame)}">${content}</g>`;
+export function renderFurniture(furniture: ResolvedFurniture, frame: Frame): string {
+  return `<g data-furniture="${furniture.type}" transform="${transform(furniture, frame)}">${symbol(furniture)}</g>`;
 }

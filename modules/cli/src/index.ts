@@ -11,7 +11,7 @@ Commands:
   check <file> [--json]       Parse and validate a plan
   compile <file> [-o file]    Render a plan as deterministic SVG
   describe <file>             Write normalized resolved JSON
-  defaults [--json]           List built-in default variables
+  defaults [--json]           List default wall thicknesses
   spec                        Print the compact language specification
 `;
 

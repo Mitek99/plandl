@@ -3,17 +3,18 @@ title: Introduction
 weight: 1
 ---
 
-PlanDL is a line-oriented definition language for relative spatial plans. It is designed for straightforward generation, parsing, validation, and repair by people and language models.
+PlanDL is a line-oriented definition language for grid-based floor plans. It is designed for straightforward generation, parsing, validation, and repair by people and language models.
 
 ## Core ideas
 
-- One definition per line, with uppercase reserved words and quoted display names.
-- Variables and formulas resolved sequentially.
-- No absolute coordinates: the first wall establishes an implicit origin.
-- Every subsequent wall attaches to an earlier wall.
-- Whole walls may meet at T-junctions; the validator derives the necessary subsegments.
-- Rooms explicitly reference the walls that contain their boundaries.
-- Doors, windows, openings, and objects attach to wall faces.
+- One command per line, with space-separated `KEY=value` parameters.
+- A leading rectangular grid defines all legal wall coordinates.
+- Rooms and terraces select rectangles using grid-line indices.
+- Compound rooms merge rectangles and suppress their shared walls.
+- Inner and bearing walls are centered; outer walls use an asymmetric thickness rule.
+- The compiler infers grid dimensions, room dimensions, and areas.
+- Furniture and openings attach to named compass walls.
+- Inner doors generate mirrored definitions for adjoining rooms.
 - Deterministic normalized JSON, diagnostics, and SVG output.
 
 ## Scope
