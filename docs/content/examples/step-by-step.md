@@ -1,6 +1,8 @@
 ---
 title: Step by step
 weight: 1
+aliases:
+  - /step-by-step/
 ---
 
 This page builds one small house in seven steps. It starts with a single room and its exterior walls, then adds openings, a second room and furniture. Each step is a complete plan of its own. The documentation build validates and renders every step, so the build fails if any step stops checking.
