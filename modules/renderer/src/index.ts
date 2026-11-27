@@ -119,7 +119,7 @@ function gridOverlay(
   const stroke = Math.max(12, radius / 9);
   const lineStyle = `stroke="#c05621" stroke-width="${format(stroke)}" stroke-dasharray="${format(stroke * 8)} ${format(stroke * 5)}" stroke-opacity="0.7"`;
   const bubbleStyle = `fill="white" stroke="#c05621" stroke-width="${format(stroke)}"`;
-  const gap = radius * 0.6;
+  const gap = radius * 1.1;
   const output = ['<g class="plandl-grid">'];
   const bubble = (center: Point, label: string, tooltip: string): string => {
     const projected = project(center, frame);
@@ -180,7 +180,7 @@ export function renderSvg(plan: ResolvedPlan, options: RenderOptions = {}): stri
   };
   // Grid markers sit outside the plan: X markers above it, Y markers to its left.
   const gridRadius = Math.max(140, (planBounds.maxX - planBounds.minX) / 70);
-  const gridSpace = options.grid ? gridRadius * 2.6 : 0;
+  const gridSpace = options.grid ? gridRadius * 3.4 : 0;
   const minX = planBounds.minX - gridSpace;
   const maxX = planBounds.maxX;
   const minY = planBounds.minY;
