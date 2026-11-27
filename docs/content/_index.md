@@ -4,7 +4,7 @@ title: PlanDL
 
 # Floor plans on a grid.
 
-PlanDL is a small, strict, LLM-friendly language for spatial plans. Rooms and terraces select grid rectangles, compound spaces merge rectangles, and furniture attaches to named room walls. The compiler infers dimensions and areas, validates the geometry, and renders SVG.
+PlanDL is a small, strict, LLM-friendly language for floor plans. Rooms select grid rectangles, doors connect named rooms, and furniture attaches to named walls. The compiler infers dimensions, areas, and access, checks that the plan makes sense as a home (every room reachable, nothing blocking a door, windows and fixtures where they belong), and renders SVG.
 
 [Read the documentation](docs/) · [See the examples](examples/) · [View on GitHub](https://github.com/Mitek99/plandl)
 

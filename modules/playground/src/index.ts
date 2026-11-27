@@ -31,8 +31,16 @@ if (editor && preview && status && diagnostics) {
     }
 
     preview.innerHTML = renderSvg(plan, { grid: gridToggle?.checked ?? false });
-    status.textContent = `Valid · ${plan.walls.length} walls · ${plan.rooms.length} rooms`;
-    status.dataset.state = "valid";
+    const warnings = plan.diagnostics.filter((diagnostic) => diagnostic.severity === "warning");
+    status.textContent = `Valid · ${plan.rooms.length} rooms · ${warnings.length === 0 ? "no warnings" : `${warnings.length} ${warnings.length === 1 ? "warning" : "warnings"}`}`;
+    status.dataset.state = warnings.length === 0 ? "valid" : "warning";
+    for (const diagnostic of warnings) {
+      const item = document.createElement("li");
+      item.dataset.severity = "warning";
+      const location = diagnostic.location ? `${diagnostic.location.line}:${diagnostic.location.column} ` : "";
+      item.textContent = `${location}${diagnostic.code} ${diagnostic.message}`;
+      diagnostics.append(item);
+    }
   };
 
   const schedule = () => {

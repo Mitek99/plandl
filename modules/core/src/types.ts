@@ -36,9 +36,25 @@ export interface GridDefinition extends DefinitionBase {
   inferred: InferredProperties;
 }
 
+export const ROOM_TYPES = [
+  "LIVING",
+  "KITCHEN",
+  "DINING",
+  "BEDROOM",
+  "BATHROOM",
+  "WC",
+  "CIRCULATION",
+  "STORAGE",
+  "UTILITY",
+  "OFFICE"
+] as const;
+
+export type RoomType = typeof ROOM_TYPES[number];
+
 export interface RoomDefinition extends DefinitionBase {
   kind: "room" | "terrace";
   name: string;
+  roomType?: RoomType;
   x: [Scalar, Scalar];
   y: [Scalar, Scalar];
   merge: string[];
@@ -70,7 +86,10 @@ export const FURNITURE_TYPES = [
   "ISLAND",
   "TOILET",
   "SHOWER",
-  "BATHTUB"
+  "BATHTUB",
+  "WARDROBE",
+  "WASHER",
+  "DISHWASHER"
 ] as const;
 
 export type FurnitureType = typeof FURNITURE_TYPES[number];
@@ -84,21 +103,32 @@ export interface FurnitureDefinition extends DefinitionBase {
   padding?: Scalar;
   width: Scalar;
   depth?: Scalar;
+  inferred: InferredProperties;
 }
 
 export type OpeningCommand = "WINDOW" | "DOOR" | "OPENING";
+export type DoorPosition = "START" | "CENTER" | "END";
+/** The name used in BETWEEN for the outside of the building. */
+export const OUTSIDE = "OUTSIDE";
 export type DoorHinge = "LEFT" | "RIGHT";
 export type DoorSwing = "INWARD" | "OUTWARD";
 
 export interface OpeningDefinition extends DefinitionBase {
   kind: "opening";
   openingType: OpeningCommand;
-  wall: string;
-  offset: Scalar;
+  /** WALL and OFFSET place the opening directly. DOOR and OPENING can instead use BETWEEN. */
+  wall?: string;
+  offset?: Scalar;
+  /** Two spaces (or OUTSIDE): the compiler finds their shared wall. A door swings into the second space. */
+  between?: [string, string];
+  /** With BETWEEN: which side of the space it opens into to use, when they share more than one wall. */
+  betweenSide?: WallSide;
+  at?: DoorPosition;
   width: Scalar;
   hinge?: DoorHinge;
   swing?: DoorSwing;
   isInferred: boolean;
+  inferred: InferredProperties;
 }
 
 export type Definition =
@@ -136,6 +166,7 @@ export interface ResolvedGrid {
 export interface ResolvedRoom {
   name: string;
   type: "ROOM" | "TERRACE";
+  roomType?: RoomType;
   x: [number, number];
   y: [number, number];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
@@ -186,6 +217,18 @@ export interface ResolvedOpening {
   wallThickness: number;
   inferred: boolean;
   inferredFrom?: string;
+  /** For openings written with BETWEEN: the two spaces as written. */
+  between?: [string, string];
+  location: SourceLocation;
+}
+
+/** A door or opening joining two spaces. Names are room or terrace names, or OUTSIDE. */
+export interface ResolvedConnection {
+  type: "DOOR" | "OPENING";
+  rooms: [string, string];
+  /** For doors: the space the leaf swings into. */
+  swingsInto?: string;
+  wall: string;
   location: SourceLocation;
 }
 
@@ -197,6 +240,7 @@ export interface ResolvedPlan {
   walls: ResolvedWall[];
   furniture: ResolvedFurniture[];
   openings: ResolvedOpening[];
+  connections: ResolvedConnection[];
   diagnostics: Diagnostic[];
 }
 

@@ -3,7 +3,7 @@ title: Introduction
 weight: 1
 ---
 
-PlanDL is a line-oriented definition language for grid-based floor plans. It is designed for straightforward generation, parsing, validation, and repair by people and language models.
+PlanDL is a line-oriented definition language for grid-based floor plans. It is designed for straightforward generation, parsing, validation, and repair by people and language models. The grid and wall-relative placement keep geometry simple enough that a model rarely gets it wrong, and the checker catches what geometry cannot: rooms nobody can enter, furniture in the way of doors, rooms without windows or fixtures.
 
 ## Core ideas
 
@@ -13,8 +13,10 @@ PlanDL is a line-oriented definition language for grid-based floor plans. It is 
 - Compound rooms merge rectangles and suppress their shared walls.
 - Inner and bearing walls are centered; outer walls use an asymmetric thickness rule.
 - The compiler infers grid dimensions, room dimensions, and areas.
-- Furniture and openings attach to named compass walls.
-- Inner doors generate mirrored definitions for adjoining rooms.
+- Rooms can have a type, which tells the checker what the room is for.
+- Doors connect two named spaces with `DOOR BETWEEN=[Hall,Bedroom]`; the compiler finds the wall.
+- Furniture and windows attach to named compass walls.
+- `plandl check` reports errors and planning warnings, with numbers, and `plandl infer` writes computed facts back into the source.
 - Deterministic normalized JSON, diagnostics, and SVG output.
 
 ## Scope

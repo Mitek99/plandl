@@ -1,0 +1,4 @@
+{{- /* Usage: {{< plandl-source name="open-plan" >}} shows static/examples/open-plan.plandl, as generated from examples/. */ -}}
+{{- $path := printf "static/examples/%s.plandl" (.Get "name") -}}
+{{- if not (fileExists $path) -}}{{- errorf "plandl-source: %s was not generated; run npm run site:generate" $path -}}{{- end -}}
+{{ transform.Highlight (readFile $path) "text" }}

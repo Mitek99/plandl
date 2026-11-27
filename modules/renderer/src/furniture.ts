@@ -127,6 +127,41 @@ function shower(width: number, height: number): string {
   ].join("");
 }
 
+function wardrobe(width: number, height: number): string {
+  // Hanging rail along the middle with coat hangers across it; doors face into the room (y = depth).
+  const shapes = [rect(0, 0, width, height), line(width * 0.04, height * 0.5, width * 0.96, height * 0.5)];
+  const hangers = Math.max(3, Math.round(width / 250));
+  for (let index = 1; index < hangers; index += 1) {
+    const x = width * index / hangers;
+    shapes.push(line(x - height * 0.08, height * 0.25, x + height * 0.08, height * 0.75));
+  }
+  return shapes.join("");
+}
+
+function washer(width: number, height: number): string {
+  const size = Math.min(width, height);
+  return [
+    rect(0, 0, width, height, OUTLINE, size * 0.06),
+    line(0, height * 0.18, width, height * 0.18),
+    ellipse(width * 0.5, height * 0.58, size * 0.3, size * 0.3, FILLED_DETAIL),
+    ellipse(width * 0.5, height * 0.58, size * 0.18, size * 0.18)
+  ].join("");
+}
+
+function dishwasher(width: number, height: number): string {
+  const shapes = [rect(0, 0, width, height), rect(width * 0.1, height * 0.12, width * 0.8, height * 0.76, FILLED_DETAIL)];
+  for (const y of [0.35, 0.5, 0.65]) shapes.push(line(width * 0.18, height * y, width * 0.82, height * y));
+  return shapes.join("");
+}
+
+function fridge(width: number, height: number): string {
+  return [
+    rect(0, 0, width, height),
+    rect(0, 0, width, height * 0.22, FILLED_DETAIL),
+    line(width * 0.75, height * 0.4, width * 0.75, height * 0.85)
+  ].join("");
+}
+
 function symbol(furniture: ResolvedFurniture): string {
   const { width, depth } = furniture;
   switch (furniture.type) {
@@ -136,8 +171,11 @@ function symbol(furniture: ResolvedFurniture): string {
     case "SINK": return sink(width, depth);
     case "TOILET": return toilet(width, depth);
     case "BATHTUB": return bath(width, depth);
-    case "CABINET":
-    case "FRIDGE": return cabinet(width, depth);
+    case "CABINET": return cabinet(width, depth);
+    case "FRIDGE": return fridge(width, depth);
+    case "WARDROBE": return wardrobe(width, depth);
+    case "WASHER": return washer(width, depth);
+    case "DISHWASHER": return dishwasher(width, depth);
     case "OVEN": return oven(width, depth);
     case "SHOWER": return shower(width, depth);
     case "DESK": return [rect(0, 0, width, depth), line(width * 0.1, depth * 0.25, width * 0.9, depth * 0.25)].join("");

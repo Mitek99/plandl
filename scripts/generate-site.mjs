@@ -8,9 +8,17 @@ const outputDirectory = "docs/static/examples";
 rmSync(outputDirectory, { recursive: true, force: true });
 mkdirSync(outputDirectory, { recursive: true });
 
-function checkAndCompile(source, output) {
-  execFileSync(process.execPath, [cli, "check", source], { stdio: "inherit" });
+function checkAndCompile(source, output, { strict = true } = {}) {
+  // Examples must pass with no warnings; tutorial steps may have warnings, which the page shows.
+  execFileSync(process.execPath, [cli, "check", source, "--quiet", ...(strict ? ["--strict"] : [])], { stdio: "inherit" });
   execFileSync(process.execPath, [cli, "compile", source, "--output", output], { stdio: "inherit" });
+}
+
+function checkReport(source) {
+  const result = JSON.parse(execFileSync(process.execPath, [cli, "check", source, "--json"], { encoding: "utf8" }));
+  const warnings = result.diagnostics.filter((diagnostic) => diagnostic.severity === "warning");
+  if (warnings.length === 0) return "valid, no warnings\n";
+  return warnings.map((warning) => `line ${warning.location?.line ?? "-"}: ${warning.code} ${warning.message}`).join("\n") + "\n";
 }
 
 for (const example of ["open-plan", "terrace", "auto-extend", "reference-house"]) {
@@ -55,8 +63,9 @@ let previous;
 for (const file of readdirSync(stepsDirectory).filter((name) => name.endsWith(".plandl")).sort()) {
   const step = file.replace(/\.plandl$/, "");
   const source = `${stepsDirectory}/${file}`;
-  checkAndCompile(source, `${stepsOutput}/${step}.svg`);
+  checkAndCompile(source, `${stepsOutput}/${step}.svg`, { strict: false });
   copyFileSync(source, `${stepsOutput}/${file}`);
+  writeFileSync(`${stepsOutput}/${step}.check`, checkReport(source));
   const text = readFileSync(source, "utf8");
   if (previous !== undefined) {
     writeFileSync(`${stepsOutput}/${step}.diff`, changedLines(previous, text));

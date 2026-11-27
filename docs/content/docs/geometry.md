@@ -41,7 +41,7 @@ An inner door has two resolved definitions: the explicit source definition and a
 
 ## Validation
 
-The resolver checks, among other rules:
+Errors reject a plan. The resolver checks, among other rules:
 
 - Exactly one leading grid, resolvable grid lines, and strictly increasing line coordinates.
 - Unitless, in-range grid indices and nonempty room ranges.
@@ -51,5 +51,8 @@ The resolver checks, among other rules:
 - Valid wall references, lengths, offsets, padding, and furniture sizes.
 - Furniture extending beyond its selected wall segment or room.
 - Openings extending beyond their selected wall or an adjoining room.
+- `BETWEEN` spaces that are unknown, merged together, share no wall, or share too little wall for the width.
 
-Normalized JSON includes resolved grid coordinates, room bounds, aggregate areas, wall geometry, furniture footprints, and structured diagnostics.
+A plan that resolves is then checked for relational problems, such as rooms without access, furniture in door swings, or bedrooms without windows. These are warnings; see [Checks](../checks/).
+
+Normalized JSON includes resolved grid coordinates, room bounds and types, aggregate areas, wall geometry, furniture footprints, openings, the connections between spaces, and structured diagnostics.

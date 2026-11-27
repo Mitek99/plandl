@@ -1,0 +1,5 @@
+{{- /* Load the plan viewer on pages whose source uses the plandl-view or plandl-step shortcodes. */ -}}
+{{- if or (strings.Contains .RawContent "plandl-view") (strings.Contains .RawContent "plandl-step") }}
+<link rel="stylesheet" href="{{ "plandl-view.css" | relURL }}">
+<script defer src="{{ "viewer.js" | relURL }}"></script>
+{{- end }}

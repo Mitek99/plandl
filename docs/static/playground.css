@@ -70,6 +70,11 @@
   color: #b42318;
 }
 
+#plandl-status[data-state="warning"],
+#plandl-diagnostics li[data-severity="warning"] {
+  color: #b45309;
+}
+
 #plandl-diagnostics {
   margin: 0;
   padding-left: 1.25rem;
@@ -95,5 +100,10 @@
 
   #plandl-status[data-state="valid"] {
     color: #6fd3ac;
+  }
+
+  #plandl-status[data-state="warning"],
+  #plandl-diagnostics li[data-severity="warning"] {
+    color: #f6ad55;
   }
 }

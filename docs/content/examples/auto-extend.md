@@ -7,12 +7,6 @@ aliases:
 
 {{< plandl-view name="auto-extend" alt="Bedroom with a merged wardrobe" >}}
 
-`Bedroom` merges `Wardrobe`, so the shared wall is omitted and the parent's inferred area includes both components. The furniture remains attached to a named component or compound wall.
+`Bedroom` merges `Wardrobe`, so the wall between them is omitted and the bedroom's area includes both rectangles. Each member is its own rectangle; the parent lists its members in `MERGE` rather than covering them. The wardrobe keeps its own name for its walls (`Wardrobe_NORTH`) and its own type.
 
-```text
-GRID LINES_X=[+2m,+2m] LINES_Y=[+3m,+0.6m]
-ROOM NAME=Wardrobe X=[0,1] Y=[1,2] INFER INNER_DIMENSIONS=[1.9m,0.55m] AREA=1.045sqm
-ROOM NAME=Bedroom X=[0,2] Y=[0,1] MERGE=[Wardrobe] INFER AREA=12.4525sqm
-BED WALL=Bedroom_SOUTH OFFSET=1m PADDING=50mm WIDTH=1.8m
-CABINET WALL=Wardrobe_NORTH OFFSET=100mm WIDTH=1.5m DEPTH=500mm
-```
+{{< plandl-source name="auto-extend" >}}

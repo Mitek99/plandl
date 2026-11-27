@@ -43,3 +43,16 @@
   font: 0.8rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   white-space: pre-wrap;
 }
+
+/* plandl check output under tutorial steps: wrap long warnings instead of scrolling. */
+.plandl-check pre,
+.plandl-check code,
+.plandl-check .line,
+.plandl-check .cl {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+}
+
+.plandl-check .line {
+  display: block !important;
+}

@@ -6,16 +6,8 @@ aliases:
 
 {{< plandl-view name="open-plan" alt="Open living room and kitchen" >}}
 
-Two rooms share an inner wall on a two-column grid. Furniture and a window attach to named compass walls, while the living-room door generates an inferred kitchen-side definition. `INFER` records dimensions and areas recomputed by the compiler.
+A living room and a kitchen on a two-column grid. The entrance is written as `DOOR BETWEEN=[OUTSIDE,Living]`, so the compiler finds the outer wall and places it; the door between the rooms is written on a named wall and generates its kitchen-side counterpart. Both rooms have a `TYPE`, so `plandl check` also confirms each has a window, the kitchen has its sink, oven, and fridge, and every room can be reached.
 
-```text
-GRID LINES_X=[+5m,+3m] LINES_Y=[5m] INFER OUTER_DIMENSIONS=[8.7m,5.7m] OUTER_AREA=49.59sqm PERIMETER=28.8m
-ROOM NAME=Living X=[0,1] Y=[0,1] INFER INNER_DIMENSIONS=[4.9m,4.9m] AREA=24.01sqm
-ROOM NAME=Kitchen X=[1,2] Y=[0,1] INFER INNER_DIMENSIONS=[2.9m,4.9m] AREA=14.21sqm
-SOFA WALL=Living_SOUTH OFFSET=1200mm PADDING=100mm WIDTH=2500mm
-TABLE WALL=Living_NORTH OFFSET=500mm PADDING=1200mm WIDTH=1800mm DEPTH=1000mm
-WINDOW WALL=Living_NORTH OFFSET=3000mm WIDTH=1500mm
-DOOR WALL=Living_EAST OFFSET=1000mm WIDTH=800mm HINGE=LEFT OPENING=INWARD
-CABINET WALL=Kitchen_NORTH OFFSET=500mm WIDTH=2000mm DEPTH=650mm
-FRIDGE WALL=Kitchen_EAST OFFSET=500mm PADDING=50mm WIDTH=800mm
-```
+The values after `INFER` were written by `plandl infer`: outer and inner dimensions, areas, which spaces each room opens onto, where the `BETWEEN` door went, and the standard depth of furniture written without `DEPTH`.
+
+{{< plandl-source name="open-plan" >}}

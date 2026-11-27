@@ -1,4 +1,4 @@
-import { FURNITURE_TYPES } from "@plandl/core";
+import { FURNITURE_TYPES, ROOM_TYPES } from "@plandl/core";
 import type {
   Definition,
   Diagnostic,
@@ -7,6 +7,7 @@ import type {
   ParameterValue,
   ParseResult,
   PlanDocument,
+  RoomType,
   Scalar,
   SourceLocation
 } from "@plandl/core";
@@ -20,18 +21,20 @@ interface Token {
 
 type Fields = Record<string, ParameterValue>;
 
-const ROOM_FIELDS = ["NAME", "X", "Y", "MERGE"];
-const ROOM_INFERENCE = ["INNER_DIMENSIONS", "AREA"];
+const ROOM_FIELDS = ["NAME", "TYPE", "X", "Y", "MERGE"];
+const ROOM_INFERENCE = ["INNER_DIMENSIONS", "AREA", "ACCESS"];
 const FURNITURE_FIELDS = ["WALL", "OFFSET", "PADDING", "WIDTH", "DEPTH"];
+const PASSAGE_INFERENCE = ["WALL", "OFFSET", "HINGE", "OPENING", "CONNECTS", "SWINGS_INTO"];
 
 function commandFields(command: string): { explicit: string[]; inferred: string[] } | undefined {
   if (command === "GRID") return { explicit: ["LINES_X", "LINES_Y"], inferred: ["OUTER_DIMENSIONS", "OUTER_AREA", "PERIMETER"] };
   if (command === "ROOM" || command === "TERRACE") return { explicit: ROOM_FIELDS, inferred: ROOM_INFERENCE };
   if (command === "DEFAULT") return { explicit: ["INNER_THICKNESS", "BEARING_THICKNESS", "OUTER_THICKNESS"], inferred: [] };
   if (command === "BEARING") return { explicit: ["X", "Y"], inferred: [] };
-  if (command === "WINDOW" || command === "OPENING") return { explicit: ["WALL", "OFFSET", "WIDTH"], inferred: [] };
-  if (command === "DOOR") return { explicit: ["WALL", "OFFSET", "WIDTH", "HINGE", "OPENING"], inferred: [] };
-  if ((FURNITURE_TYPES as readonly string[]).includes(command)) return { explicit: FURNITURE_FIELDS, inferred: [] };
+  if (command === "WINDOW") return { explicit: ["WALL", "OFFSET", "WIDTH"], inferred: [] };
+  if (command === "OPENING") return { explicit: ["WALL", "OFFSET", "BETWEEN", "SIDE", "AT", "WIDTH"], inferred: PASSAGE_INFERENCE };
+  if (command === "DOOR") return { explicit: ["WALL", "OFFSET", "BETWEEN", "SIDE", "AT", "WIDTH", "HINGE", "OPENING"], inferred: PASSAGE_INFERENCE };
+  if ((FURNITURE_TYPES as readonly string[]).includes(command)) return { explicit: FURNITURE_FIELDS, inferred: ["DEPTH"] };
   return undefined;
 }
 
@@ -324,6 +327,7 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
     missing("X");
     missing("Y");
     const name = stringValue(fields.NAME);
+    const roomType = stringValue(fields.TYPE);
     const x = scalarArray(fields.X);
     const y = scalarArray(fields.Y);
     const merge = fields.MERGE === undefined ? [] : stringArray(fields.MERGE);
@@ -331,10 +335,15 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
     if (x?.length !== 2) invalid("X", "an array of two grid indices");
     if (y?.length !== 2) invalid("Y", "an array of two grid indices");
     if (!merge) invalid("MERGE", "an array of room names");
+    if (fields.TYPE !== undefined) {
+      if (keyword === "TERRACE") invalid("TYPE", "omitted: only ROOM takes a TYPE");
+      else if (!roomType || !(ROOM_TYPES as readonly string[]).includes(roomType)) invalid("TYPE", `one of ${ROOM_TYPES.join(", ")}`);
+    }
     if (diagnostics.length > initialDiagnostics) return null;
     return {
       kind: keyword === "ROOM" ? "room" : "terrace",
       name: name!,
+      roomType: roomType as RoomType | undefined,
       x: x as [Scalar, Scalar],
       y: y as [Scalar, Scalar],
       merge: merge!,
@@ -366,16 +375,34 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
   }
 
   if (keyword === "WINDOW" || keyword === "DOOR" || keyword === "OPENING") {
-    missing("WALL");
-    missing("OFFSET");
+    const usesBetween = fields.BETWEEN !== undefined;
+    let between: [string, string] | undefined;
+    let at: string | undefined;
+    let betweenSide: string | undefined;
+    if (usesBetween) {
+      const names = stringArray(fields.BETWEEN);
+      if (fields.WALL !== undefined || fields.OFFSET !== undefined) {
+        parser.error("CONFLICTING_PARAMETERS", `${keyword} uses either BETWEEN (and optional AT) or WALL with OFFSET, not both.`, keywordToken);
+      }
+      if (!names || names.length !== 2) invalid("BETWEEN", "an array of two room names, or a room name and OUTSIDE");
+      else between = [names[0]!, names[1]!];
+      at = stringValue(fields.AT);
+      if (fields.AT !== undefined && at !== "START" && at !== "CENTER" && at !== "END") invalid("AT", "START, CENTER, or END");
+      betweenSide = stringValue(fields.SIDE);
+      if (fields.SIDE !== undefined && !["NORTH", "SOUTH", "EAST", "WEST"].includes(betweenSide ?? "")) invalid("SIDE", "NORTH, SOUTH, EAST, or WEST");
+    } else {
+      if (fields.AT !== undefined || fields.SIDE !== undefined) parser.error("CONFLICTING_PARAMETERS", `${keyword} AT and SIDE are only used with BETWEEN.`, keywordToken);
+      missing("WALL");
+      missing("OFFSET");
+    }
     missing("WIDTH");
     const wall = stringValue(fields.WALL);
     const offset = scalar(fields.OFFSET);
     const width = scalar(fields.WIDTH);
     const hinge = stringValue(fields.HINGE);
     const swing = stringValue(fields.OPENING);
-    if (!wall) invalid("WALL", "a room wall string such as Bedroom_EAST");
-    if (!offset) invalid("OFFSET", "a scalar");
+    if (!usesBetween && !wall) invalid("WALL", "a room wall string such as Bedroom_EAST");
+    if (!usesBetween && !offset) invalid("OFFSET", "a scalar");
     if (!width) invalid("WIDTH", "a scalar");
     if (hinge !== undefined && hinge !== "LEFT" && hinge !== "RIGHT") invalid("HINGE", "LEFT or RIGHT");
     if (swing !== undefined && swing !== "INWARD" && swing !== "OUTWARD") invalid("OPENING", "INWARD or OUTWARD");
@@ -383,12 +410,16 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
     return {
       kind: "opening",
       openingType: keyword,
-      wall: wall!,
-      offset: offset!,
+      wall: usesBetween ? undefined : wall!,
+      offset: usesBetween ? undefined : offset!,
+      between,
+      betweenSide: betweenSide as "NORTH" | "SOUTH" | "EAST" | "WEST" | undefined,
+      at: at as "START" | "CENTER" | "END" | undefined,
       width: width!,
       hinge: hinge as "LEFT" | "RIGHT" | undefined,
       swing: swing as "INWARD" | "OUTWARD" | undefined,
       isInferred: inferredDefinition,
+      inferred,
       location
     };
   }
@@ -415,6 +446,7 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
     padding,
     width: width!,
     depth,
+    inferred,
     location
   };
 }

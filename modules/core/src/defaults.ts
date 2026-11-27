@@ -31,5 +31,27 @@ export const FURNITURE_DEPTHS: Readonly<Record<FurnitureType, number>> = Object.
   ISLAND: 900,
   TOILET: 700,
   SHOWER: 900,
-  BATHTUB: 800
+  BATHTUB: 800,
+  WARDROBE: 600,
+  WASHER: 600,
+  DISHWASHER: 600
+});
+
+/** Typical widths along the wall, published in the spec so authors do not have to guess. */
+export const FURNITURE_TYPICAL_WIDTHS: Readonly<Record<FurnitureType, string>> = Object.freeze({
+  BED: "900mm single, 1400-1800mm double",
+  DESK: "1200-1600mm",
+  CABINET: "any; kitchen base units 600mm each",
+  SINK: "600-1000mm",
+  FRIDGE: "600-700mm",
+  OVEN: "600mm",
+  SOFA: "1800-2600mm",
+  TABLE: "1200-1800mm (with chairs: DEPTH 900-1000mm)",
+  ISLAND: "1200-2000mm",
+  TOILET: "400-600mm",
+  SHOWER: "800-1000mm",
+  BATHTUB: "1500-1800mm",
+  WARDROBE: "1000-2400mm",
+  WASHER: "600mm",
+  DISHWASHER: "450-600mm"
 });

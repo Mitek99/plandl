@@ -1,2 +1,2 @@
 GRID LINES_X=[9m] LINES_Y=[6m]
-ROOM NAME=Living X=[0,1] Y=[0,1]
+ROOM NAME=Living TYPE=LIVING X=[0,1] Y=[0,1]

@@ -222,6 +222,13 @@ export function renderSvg(plan: ResolvedPlan, options: RenderOptions = {}): stri
       }
     } else if (opening.type === "DOOR") {
       const leaf = doorLeaf(opening);
+      // The quarter arc the leaf sweeps, from the open leaf back to the closed position.
+      const closed = leaf.hinge === opening.end ? opening.start : opening.end;
+      const h = project(leaf.hinge, frame);
+      const a = project(leaf.end, frame);
+      const b = project(closed, frame);
+      const sweep = (a.x - h.x) * (b.y - h.y) - (a.y - h.y) * (b.x - h.x) > 0 ? 1 : 0;
+      output.push(`<path d="M ${format(a.x)} ${format(a.y)} A ${format(opening.width)} ${format(opening.width)} 0 0 ${sweep} ${format(b.x)} ${format(b.y)}" fill="none" stroke="#2f855a" stroke-width="12" stroke-dasharray="40 30"/>`);
       output.push(line(leaf.hinge, leaf.end, frame, 'stroke="#2f855a" stroke-width="24"'));
     }
   }

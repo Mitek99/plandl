@@ -1,6 +1,6 @@
 ---
 title: AWS deployment
-weight: 7
+weight: 8
 ---
 
 The production documentation is available at [https://plandl.org/](https://plandl.org/).

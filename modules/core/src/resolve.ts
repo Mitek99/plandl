@@ -1,8 +1,14 @@
 import { DEFAULT_WALLS, FURNITURE_DEPTHS } from "./defaults.js";
+import { analyzePlan } from "./analyze.js";
+import { OUTSIDE } from "./types.js";
 import type {
   Diagnostic,
+  DoorHinge,
+  DoorSwing,
+  OpeningDefinition,
   PlanDocument,
   Point,
+  ResolvedConnection,
   ResolvedFurniture,
   ResolvedGrid,
   ResolvedOpening,
@@ -145,6 +151,19 @@ export function wallPoints(wall: ResolvedWall): Point[] {
   return wallPolygon(wall);
 }
 
+/** The wall pieces an opening cuts through: same grid line, overlapping span, bordering the opening's room. */
+export function openingHostWalls(plan: ResolvedPlan, opening: ResolvedOpening): ResolvedWall[] {
+  const horizontal = opening.side === "NORTH" || opening.side === "SOUTH";
+  const along = (point: Point): number => horizontal ? point.x : point.y;
+  return plan.walls.filter((wall) => {
+    if (!wall.rooms.includes(opening.component)) return false;
+    const wallFixed = horizontal ? wall.start.y : wall.start.x;
+    const openingFixed = horizontal ? opening.start.y : opening.start.x;
+    if (Math.abs(wallFixed - openingFixed) > EPSILON) return false;
+    return Math.min(along(wall.end), along(opening.end)) - Math.max(along(wall.start), along(opening.start)) > EPSILON;
+  });
+}
+
 interface WallSegment {
   start: number;
   end: number;
@@ -164,6 +183,7 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
     walls: [],
     furniture: [],
     openings: [],
+    connections: [],
     diagnostics
   };
 
@@ -251,6 +271,7 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
     const room: ResolvedRoom = {
       name: definition.name,
       type: definition.kind === "room" ? "ROOM" : "TERRACE",
+      roomType: definition.kind === "room" ? definition.roomType : undefined,
       x: xRange,
       y: yRange,
       bounds: { minX: x[xRange[0]]!, maxX: x[xRange[1]]!, minY: y[yRange[0]]!, maxY: y[yRange[1]]! },
@@ -622,55 +643,191 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
     start: side === "NORTH" || side === "SOUTH" ? { x: start, y: segment.centerFixed } : { x: segment.centerFixed, y: start },
     end: side === "NORTH" || side === "SOUTH" ? { x: end, y: segment.centerFixed } : { x: segment.centerFixed, y: end }
   });
-  const hostWalls = (opening: ResolvedOpening): ResolvedWall[] => plan.walls.filter((wall) => {
-    if (!wall.rooms.includes(opening.component)) return false;
-    const horizontal = opening.side === "NORTH" || opening.side === "SOUTH";
-    const wallFixed = horizontal ? wall.start.y : wall.start.x;
-    const openingFixed = horizontal ? opening.start.y : opening.start.x;
-    if (Math.abs(wallFixed - openingFixed) > EPSILON) return false;
-    const wallStart = alongValue(wall.start, opening.side);
-    const wallEnd = alongValue(wall.end, opening.side);
-    const openingStart = alongValue(opening.start, opening.side);
-    const openingEnd = alongValue(opening.end, opening.side);
-    return Math.min(wallEnd, openingEnd) - Math.max(wallStart, openingStart) > EPSILON;
-  });
+  const hostWalls = (opening: ResolvedOpening): ResolvedWall[] => openingHostWalls(plan, opening);
+
+  // BETWEEN=[A,B]: find the longest run of wall shared by A and B (or A and the outside), and place the
+  // opening on the wall of the space it swings into (B, or the indoor space when one side is OUTSIDE).
+  const neighbourList = (name: string): string => {
+    const members = new Set(descendants(name).map((room) => room.name));
+    const found: string[] = [];
+    for (const wall of plan.walls) {
+      const own = wall.rooms.filter((room) => members.has(room));
+      if (own.length === 0) continue;
+      const others = wall.rooms.filter((room) => !members.has(room));
+      for (const other of others.length > 0 ? others : wall.type === "OUTER" ? [OUTSIDE] : []) {
+        if (!found.includes(other)) found.push(other);
+      }
+    }
+    return found.length > 0 ? found.join(", ") : "none";
+  };
+  const placeBetween = (definition: OpeningDefinition, width: number): { wall: string; offset: number; hinge?: DoorHinge; swing?: DoorSwing } | undefined => {
+    const [first, second] = definition.between!;
+    for (const name of [first, second]) {
+      if (name !== OUTSIDE && !spaceByName.has(name)) {
+        report(diagnostics, "UNKNOWN_ROOM", `${definition.openingType} BETWEEN names unknown room ${name}. Use a ROOM or TERRACE name, or OUTSIDE.`, definition.location);
+        return undefined;
+      }
+    }
+    if (first === second || (first === OUTSIDE && second === OUTSIDE)) {
+      report(diagnostics, "INVALID_BETWEEN", `${definition.openingType} BETWEEN needs two different spaces.`, definition.location);
+      return undefined;
+    }
+    const into = second === OUTSIDE ? first : second;
+    const from = into === second ? first : second;
+    const intoMembers = new Set(descendants(into).map((room) => room.name));
+    const fromMembers = from === OUTSIDE ? undefined : new Set(descendants(from).map((room) => room.name));
+    const intoRoom = spaceByName.get(into)!;
+    if (fromMembers && spaceByName.get(from)!.compound === intoRoom.compound) {
+      report(diagnostics, "INVALID_BETWEEN", `${from} and ${into} are merged into one space, so there is no wall between them.`, definition.location);
+      return undefined;
+    }
+    interface Run { vertical: boolean; fixed: number; side: WallSide; start: number; end: number }
+    const pieces: Run[] = [];
+    for (const wall of plan.walls) {
+      const own = wall.rooms.filter((room) => intoMembers.has(room));
+      if (own.length !== 1) continue;
+      const others = wall.rooms.filter((room) => !intoMembers.has(room));
+      const matches = fromMembers ? others.length === 1 && fromMembers.has(others[0]!) : others.length === 0 && wall.type === "OUTER";
+      if (!matches) continue;
+      const member = spaceByName.get(own[0]!)!;
+      const vertical = Math.abs(wall.start.x - wall.end.x) <= EPSILON;
+      const fixed = vertical ? wall.start.x : wall.start.y;
+      const side: WallSide = vertical
+        ? Math.abs(member.bounds.minX - fixed) <= EPSILON ? "WEST" : "EAST"
+        : Math.abs(member.bounds.minY - fixed) <= EPSILON ? "SOUTH" : "NORTH";
+      const a = vertical ? wall.start.y : wall.start.x;
+      const b = vertical ? wall.end.y : wall.end.x;
+      pieces.push({ vertical, fixed, side, start: Math.min(a, b), end: Math.max(a, b) });
+    }
+    if (definition.betweenSide) {
+      const wanted = definition.betweenSide;
+      const sides = [...new Set(pieces.map((piece) => piece.side))];
+      const kept = pieces.filter((piece) => piece.side === wanted);
+      if (pieces.length > 0 && kept.length === 0) {
+        report(diagnostics, "ROOMS_NOT_ADJACENT", `${into} meets ${from === OUTSIDE ? "the outside" : from} only on its ${sides.join(", ")} side, not ${wanted}.`, definition.location);
+        return undefined;
+      }
+      pieces.splice(0, pieces.length, ...kept);
+    }
+    if (pieces.length === 0) {
+      const target = from === OUTSIDE ? "no outer wall" : `no wall shared with ${from}`;
+      report(diagnostics, "ROOMS_NOT_ADJACENT", `${into} has ${target}. ${into} borders: ${neighbourList(into)}.`, definition.location);
+      return undefined;
+    }
+    pieces.sort((a, b) => Number(a.vertical) - Number(b.vertical) || a.fixed - b.fixed || a.side.localeCompare(b.side) || a.start - b.start);
+    const runs: Run[] = [];
+    for (const piece of pieces) {
+      const last = runs[runs.length - 1];
+      if (last && last.vertical === piece.vertical && Math.abs(last.fixed - piece.fixed) <= EPSILON && last.side === piece.side
+        && Math.abs(last.end - piece.start) <= EPSILON) {
+        last.end = piece.end;
+      } else {
+        runs.push({ ...piece });
+      }
+    }
+    // Usable stretch of each run on the inner face of the room it swings into.
+    let best: { run: Run; low: number; high: number; offsetAtLow: number } | undefined;
+    for (const run of runs) {
+      const segments = segmentsFor(descendants(into), run.side);
+      let cursor = 0;
+      for (const segment of segments) {
+        const segmentLength = segment.end - segment.start;
+        if (Math.abs(segment.centerFixed - run.fixed) <= EPSILON) {
+          let low = Math.max(segment.start, run.start);
+          let high = Math.min(segment.end, run.end);
+          if (run.start > segment.start + EPSILON) low += defaults.innerThickness / 2;
+          if (run.end < segment.end - EPSILON) high -= defaults.innerThickness / 2;
+          if (high - low > EPSILON && (!best || high - low > best.high - best.low + EPSILON)) {
+            best = { run, low, high, offsetAtLow: cursor + low - segment.start };
+          }
+        }
+        cursor += segmentLength;
+      }
+    }
+    const available = best ? best.high - best.low : 0;
+    if (!best || available + EPSILON < width) {
+      report(
+        diagnostics,
+        "BETWEEN_TOO_NARROW",
+        `The wall shared by ${first} and ${second} has ${Math.round(available)}mm clear, but the ${definition.openingType.toLowerCase()} is ${Math.round(width)}mm wide.`,
+        definition.location
+      );
+      return undefined;
+    }
+    const at = definition.at ?? "START";
+    const clearance = Math.min(100, (available - width) / 2);
+    const position = at === "START" ? best.low + clearance : at === "END" ? best.high - clearance - width : (best.low + best.high - width) / 2;
+    const offset = best.offsetAtLow + position - best.low;
+    const side = best.run.side;
+    if (definition.openingType !== "DOOR") return { wall: `${into}_${side}`, offset };
+    const leftAtEnd = side === "SOUTH" || side === "EAST";
+    const hingeAtEnd = at === "END";
+    return {
+      wall: `${into}_${side}`,
+      offset,
+      hinge: definition.hinge ?? (hingeAtEnd === leftAtEnd ? "LEFT" : "RIGHT"),
+      swing: definition.swing ?? "INWARD"
+    };
+  };
 
   for (const definition of document.definitions) {
     if (definition.kind !== "opening") continue;
-    const match = definition.wall.match(/^(.*)_(NORTH|SOUTH|EAST|WEST)$/);
+    const width = length(definition.width, `${definition.openingType} WIDTH`, diagnostics);
+    let wallName: string;
+    let offset: number;
+    let hingeChoice = definition.hinge;
+    let swingChoice = definition.swing;
+    if (definition.between) {
+      const between = placeBetween(definition, width);
+      if (!between) continue;
+      wallName = between.wall;
+      offset = between.offset;
+      hingeChoice = between.hinge;
+      swingChoice = between.swing;
+    } else {
+      wallName = definition.wall!;
+      offset = length(definition.offset!, `${definition.openingType} OFFSET`, diagnostics, true);
+    }
+    const match = wallName.match(/^(.*)_(NORTH|SOUTH|EAST|WEST)$/);
     if (!match || !match[1]) {
-      report(diagnostics, "INVALID_WALL_REFERENCE", `${definition.wall} must use RoomName_NORTH, SOUTH, EAST, or WEST.`, definition.location);
+      report(diagnostics, "INVALID_WALL_REFERENCE", `${wallName} must use RoomName_NORTH, SOUTH, EAST, or WEST.`, definition.location);
       continue;
     }
     const roomName = match[1];
     const side = match[2] as WallSide;
     if (!spaceByName.has(roomName)) {
-      report(diagnostics, "UNKNOWN_OPENING_WALL", `Unknown room wall ${definition.wall}.`, definition.location);
+      report(diagnostics, "UNKNOWN_OPENING_WALL", `Unknown room wall ${wallName}. Rooms: ${spaces.map((room) => room.name).join(", ")}.`, definition.location);
       continue;
     }
-    const offset = length(definition.offset, `${definition.openingType} OFFSET`, diagnostics, true);
-    const width = length(definition.width, `${definition.openingType} WIDTH`, diagnostics);
-    const placed = placeOnWall(segmentsFor(descendants(roomName), side), offset, width);
+    const segmentsOnWall = segmentsFor(descendants(roomName), side);
+    const placed = placeOnWall(segmentsOnWall, offset, width);
     if (!placed) {
-      report(diagnostics, "OPENING_OUTSIDE_WALL", `${definition.openingType} does not fit on ${definition.wall} at OFFSET ${definition.offset.raw}.`, definition.location);
+      const usable = segmentsOnWall.map((segment) => Math.round(segment.end - segment.start));
+      report(
+        diagnostics,
+        "OPENING_OUTSIDE_WALL",
+        `${definition.openingType} does not fit on ${wallName} at OFFSET ${Math.round(offset)}mm with WIDTH ${Math.round(width)}mm. Usable wall lengths: ${usable.length > 0 ? usable.map((value) => `${value}mm`).join(" + ") : "none (no wall on that side)"}.`,
+        definition.location
+      );
       continue;
     }
     const alongStart = placed.segment.start + placed.localOffset;
     const points = openingPoints(placed.segment, side, alongStart, alongStart + width);
     const opening: ResolvedOpening = {
       type: definition.openingType,
-      wall: definition.wall,
+      wall: wallName,
       room: roomName,
       component: placed.segment.room.name,
       side,
       offset,
       width,
-      hinge: definition.openingType === "DOOR" ? definition.hinge ?? "LEFT" : undefined,
-      swing: definition.openingType === "DOOR" ? definition.swing ?? "INWARD" : undefined,
+      hinge: definition.openingType === "DOOR" ? hingeChoice ?? "LEFT" : undefined,
+      swing: definition.openingType === "DOOR" ? swingChoice ?? "INWARD" : undefined,
       start: points.start,
       end: points.end,
       wallThickness: 0,
       inferred: definition.isInferred,
+      between: definition.between,
       location: definition.location
     };
     const hosts = hostWalls(opening);
@@ -693,7 +850,7 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
       cursor += segment.end - segment.start;
     }
     if (!target) {
-      report(diagnostics, "DOOR_COUNTERPART_FIT", `${definition.wall} does not fit the adjoining room ${otherName}.`, definition.location);
+      report(diagnostics, "DOOR_COUNTERPART_FIT", `${wallName} does not fit the adjoining room ${otherName}.`, definition.location);
       continue;
     }
     const duplicate = plan.openings.some((candidate) => candidate.type === "DOOR" && candidate.room === otherName
@@ -709,7 +866,7 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
       hinge: opening.hinge === "LEFT" ? "RIGHT" : "LEFT",
       swing: opening.swing === "INWARD" ? "OUTWARD" : "INWARD",
       inferred: true,
-      inferredFrom: definition.wall
+      inferredFrom: wallName
     });
   }
 
@@ -721,5 +878,37 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
   }
   plan.openings = [...uniqueOpenings.values()];
 
+  // Connections: each physical door or opening once, with the spaces on both sides.
+  const seenPassages = new Set<string>();
+  for (const opening of plan.openings) {
+    if (opening.type === "WINDOW") continue;
+    const key = [Math.round(opening.start.x), Math.round(opening.start.y), Math.round(opening.end.x), Math.round(opening.end.y)].join(":");
+    if (seenPassages.has(key)) continue;
+    seenPassages.add(key);
+    const hosts = hostWalls(opening);
+    const others = [...new Set(hosts.flatMap((wall) => wall.rooms).filter((name) => name !== opening.component))];
+    let other: string;
+    if (others.length === 0) other = OUTSIDE;
+    else if (others.length === 1) other = others[0]!;
+    else {
+      diagnostics.push({
+        code: "OPENING_SPANS_ROOMS",
+        message: `The ${opening.type.toLowerCase()} on ${opening.wall} at OFFSET ${Math.round(opening.offset)}mm spans the walls of ${others.join(" and ")}. Move it so it opens onto one room.`,
+        severity: "warning",
+        location: opening.location
+      });
+      continue;
+    }
+    const connection: ResolvedConnection = {
+      type: opening.type,
+      rooms: [opening.component, other],
+      wall: opening.wall,
+      location: opening.location
+    };
+    if (opening.type === "DOOR") connection.swingsInto = opening.swing === "INWARD" ? opening.component : other;
+    plan.connections.push(connection);
+  }
+
+  if (!diagnostics.some((diagnostic) => diagnostic.severity === "error")) analyzePlan(plan, document);
   return plan;
 }
