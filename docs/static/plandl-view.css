@@ -1,0 +1,45 @@
+.plandl-view {
+  margin: 1.25rem 0;
+}
+
+.plandl-view-canvas {
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+.plandl-view-canvas svg,
+.plandl-view-canvas img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.plandl-view-controls,
+.plandl-grid-label {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.plandl-view-controls label,
+.plandl-grid-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.plandl-view-controls[hidden] {
+  display: none;
+}
+
+.plandl-view-error {
+  margin: 0;
+  padding: 1rem;
+  color: #b42318;
+  font: 0.8rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}

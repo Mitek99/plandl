@@ -1,8 +1,10 @@
 ---
 title: Open plan
+aliases:
+  - /open-plan/
 ---
 
-![Open living room and kitchen](../open-plan.svg)
+{{< plandl-view name="open-plan" alt="Open living room and kitchen" >}}
 
 Two rooms share an inner wall on a two-column grid. Furniture and a window attach to named compass walls, while the living-room door generates an inferred kitchen-side definition. `INFER` records dimensions and areas recomputed by the compiler.
 

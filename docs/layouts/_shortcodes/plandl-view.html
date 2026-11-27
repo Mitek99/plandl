@@ -1,0 +1,2 @@
+{{- /* Usage: {{< plandl-view name="open-plan" alt="..." >}} renders static/examples/open-plan.plandl in the browser. */ -}}
+{{ partial "plandl-view.html" (dict "page" .Page "name" (.Get "name") "alt" (.Get "alt")) }}

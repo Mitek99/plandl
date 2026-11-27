@@ -9,7 +9,8 @@ const USAGE = `Usage: plandl <command> [arguments]
 
 Commands:
   check <file> [--json]       Parse and validate a plan
-  compile <file> [-o file]    Render a plan as deterministic SVG
+  compile <file> [-o file] [--grid]
+                              Render a plan as deterministic SVG, optionally with grid lines
   describe <file>             Write normalized resolved JSON
   defaults [--json]           List default wall thicknesses
   spec                        Print the compact language specification
@@ -79,7 +80,7 @@ export function runCli(args: string[]): number {
         printDiagnostics(file, plan.diagnostics);
         return 1;
       }
-      const svg = renderSvg(plan);
+      const svg = renderSvg(plan, { grid: rest.includes("--grid") });
       const output = option(rest, "--output", "-o");
       if (output) {
         const path = resolve(output);

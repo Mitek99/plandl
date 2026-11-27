@@ -46,6 +46,16 @@
   height: auto;
 }
 
+.plandl-grid-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 #plandl-status {
   margin: 0.6rem 0 0;
   font-size: 0.85rem;

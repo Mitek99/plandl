@@ -15,6 +15,8 @@ function checkAndCompile(source, output) {
 
 for (const example of ["open-plan", "terrace", "auto-extend", "reference-house"]) {
   checkAndCompile(`examples/${example}.plandl`, `${outputDirectory}/${example}.svg`);
+  // The source is embedded in the page and rendered in the browser; the SVG is the no-JavaScript fallback.
+  copyFileSync(`examples/${example}.plandl`, `${outputDirectory}/${example}.plandl`);
 }
 
 // Line diff (LCS) listing only removed and added lines, used to show what each step changes.
@@ -67,12 +69,6 @@ const specification = execFileSync(process.execPath, [cli, "spec"], { encoding: 
 writeFileSync("docs/static/defaults.json", defaults);
 writeFileSync("docs/static/spec.txt", specification);
 
-await build({
-  entryPoints: ["modules/playground/src/index.ts"],
-  outfile: "docs/static/playground.js",
-  bundle: true,
-  format: "iife",
-  platform: "browser",
-  target: "es2022",
-  minify: true
-});
+const browserBundle = { bundle: true, format: "iife", platform: "browser", target: "es2022", minify: true };
+await build({ ...browserBundle, entryPoints: ["modules/playground/src/index.ts"], outfile: "docs/static/playground.js" });
+await build({ ...browserBundle, entryPoints: ["modules/playground/src/viewer.ts"], outfile: "docs/static/viewer.js" });

@@ -19,7 +19,7 @@ PlanDL provides deterministic output, normalized data, structured diagnostics, g
 
 ```text
 plandl check <file> [--json]
-plandl compile <file> [--output file.svg]
+plandl compile <file> [--output file.svg] [--grid]
 plandl describe <file>
 plandl defaults [--json]
 plandl spec
@@ -27,7 +27,7 @@ plandl spec
 
 In this repository, invoke the CLI with `node modules/cli/dist/cli.js` after `npm run build`.
 
-`compile` writes SVG to standard output unless `--output` or `-o` is supplied. `describe` writes the complete resolved model. `spec` prints the compact grammar and semantic rules; a generated copy is available at [spec.txt](../../spec.txt).
+`compile` writes SVG to standard output unless `--output` or `-o` is supplied. `--grid` also draws the grid lines with numbered markers, X along the top and Y down the left, matching the indexes rooms use. The documentation renders plans in the browser with the same renderer and a Grid lines toggle. `describe` writes the complete resolved model. `spec` prints the compact grammar and semantic rules; a generated copy is available at [spec.txt](../../spec.txt).
 
 ## Furniture symbols
 

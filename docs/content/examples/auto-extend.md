@@ -1,8 +1,11 @@
 ---
 title: Compound rooms
+aliases:
+  - /auto-extend/
+  - /compound-rooms/
 ---
 
-![Bedroom with a merged wardrobe](../auto-extend.svg)
+{{< plandl-view name="auto-extend" alt="Bedroom with a merged wardrobe" >}}
 
 `Bedroom` merges `Wardrobe`, so the shared wall is omitted and the parent's inferred area includes both components. The furniture remains attached to a named component or compound wall.
 

@@ -1,8 +1,10 @@
 ---
 title: Terrace
+aliases:
+  - /terrace/
 ---
 
-![Terrace with furniture](../terrace.svg)
+{{< plandl-view name="terrace" alt="Terrace with furniture" >}}
 
 `TERRACE` uses the same grid-index geometry as `ROOM`, but its outer walls have zero thickness. Its inferred inner dimensions are therefore the full grid span.
 

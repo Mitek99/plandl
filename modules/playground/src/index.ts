@@ -1,11 +1,13 @@
 import { resolvePlan } from "@plandl/core";
 import { parsePlan } from "@plandl/parser";
 import { renderSvg } from "@plandl/renderer";
+import { gridPreference, setGridPreference } from "./grid-preference.js";
 
 const editor = document.querySelector<HTMLTextAreaElement>("#plandl-editor");
 const preview = document.querySelector<HTMLDivElement>("#plandl-preview");
 const status = document.querySelector<HTMLParagraphElement>("#plandl-status");
 const diagnostics = document.querySelector<HTMLUListElement>("#plandl-diagnostics");
+const gridToggle = document.querySelector<HTMLInputElement>("#plandl-grid");
 
 if (editor && preview && status && diagnostics) {
   let scheduled = false;
@@ -28,7 +30,7 @@ if (editor && preview && status && diagnostics) {
       return;
     }
 
-    preview.innerHTML = renderSvg(plan);
+    preview.innerHTML = renderSvg(plan, { grid: gridToggle?.checked ?? false });
     status.textContent = `Valid · ${plan.walls.length} walls · ${plan.rooms.length} rooms`;
     status.dataset.state = "valid";
   };
@@ -43,5 +45,12 @@ if (editor && preview && status && diagnostics) {
   };
 
   editor.addEventListener("input", schedule);
+  if (gridToggle) {
+    gridToggle.checked = gridPreference();
+    gridToggle.addEventListener("change", () => {
+      setGridPreference(gridToggle.checked);
+      update();
+    });
+  }
   update();
 }

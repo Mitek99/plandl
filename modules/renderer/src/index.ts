@@ -104,7 +104,49 @@ function doorLeaf(opening: ResolvedOpening): { hinge: Point; end: Point } {
   };
 }
 
-export function renderSvg(plan: ResolvedPlan): string {
+export interface RenderOptions {
+  /** Draw the grid lines with their index markers (X along the top, Y down the left). Off by default. */
+  grid?: boolean;
+}
+
+function gridOverlay(
+  plan: ResolvedPlan,
+  frame: Frame,
+  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+  radius: number
+): string {
+  const grid = plan.grid!;
+  const stroke = Math.max(12, radius / 9);
+  const lineStyle = `stroke="#c05621" stroke-width="${format(stroke)}" stroke-dasharray="${format(stroke * 8)} ${format(stroke * 5)}" stroke-opacity="0.7"`;
+  const bubbleStyle = `fill="white" stroke="#c05621" stroke-width="${format(stroke)}"`;
+  const gap = radius * 0.6;
+  const output = ['<g class="plandl-grid">'];
+  const bubble = (center: Point, label: string, tooltip: string): string => {
+    const projected = project(center, frame);
+    return [
+      "<g>",
+      `<title>${escapeXml(tooltip)}</title>`,
+      `<circle cx="${format(projected.x)}" cy="${format(projected.y)}" r="${format(radius)}" ${bubbleStyle}/>`,
+      `<text x="${format(projected.x)}" y="${format(projected.y)}" text-anchor="middle" dominant-baseline="central" font-family="system-ui, sans-serif" font-size="${format(radius * 1.1)}" font-weight="600" fill="#9c4221">${escapeXml(label)}</text>`,
+      "</g>"
+    ].join("");
+  };
+  const metres = (value: number): string => `${format(value / 1000)} m`;
+  grid.x.forEach((x, index) => {
+    const top = bounds.maxY + gap;
+    output.push(line({ x, y: bounds.minY - gap }, { x, y: top }, frame, lineStyle));
+    output.push(bubble({ x, y: top + radius }, String(index), `X grid line ${index} at ${metres(x)}`));
+  });
+  grid.y.forEach((y, index) => {
+    const left = bounds.minX - gap;
+    output.push(line({ x: left, y }, { x: bounds.maxX + gap, y }, frame, lineStyle));
+    output.push(bubble({ x: left - radius, y }, String(index), `Y grid line ${index} at ${metres(y)}`));
+  });
+  output.push("</g>");
+  return output.join("\n");
+}
+
+export function renderSvg(plan: ResolvedPlan, options: RenderOptions = {}): string {
   if (plan.diagnostics.some((diagnostic) => diagnostic.severity === "error")) {
     throw new Error("Cannot render a plan with validation errors.");
   }
@@ -130,10 +172,19 @@ export function renderSvg(plan: ResolvedPlan): string {
       { x: plan.grid.x[plan.grid.x.length - 1]!, y: plan.grid.y[plan.grid.y.length - 1]! }
     );
   }
-  const minX = Math.min(...allPoints.map((point) => point.x));
-  const maxX = Math.max(...allPoints.map((point) => point.x));
-  const minY = Math.min(...allPoints.map((point) => point.y));
-  const maxY = Math.max(...allPoints.map((point) => point.y));
+  const planBounds = {
+    minX: Math.min(...allPoints.map((point) => point.x)),
+    maxX: Math.max(...allPoints.map((point) => point.x)),
+    minY: Math.min(...allPoints.map((point) => point.y)),
+    maxY: Math.max(...allPoints.map((point) => point.y))
+  };
+  // Grid markers sit outside the plan: X markers above it, Y markers to its left.
+  const gridRadius = Math.max(140, (planBounds.maxX - planBounds.minX) / 70);
+  const gridSpace = options.grid ? gridRadius * 2.6 : 0;
+  const minX = planBounds.minX - gridSpace;
+  const maxX = planBounds.maxX;
+  const minY = planBounds.minY;
+  const maxY = planBounds.maxY + gridSpace;
   const margin = 500;
   const frame: Frame = { minX, maxY, margin };
   const width = Math.max(1, maxX - minX + margin * 2);
@@ -177,6 +228,7 @@ export function renderSvg(plan: ResolvedPlan): string {
   for (const furniture of plan.furniture) {
     output.push(renderFurniture(furniture, frame));
   }
+  if (options.grid) output.push(gridOverlay(plan, frame, planBounds, gridRadius));
 
   // Label sizes follow the drawing width so labels stay readable once the SVG is scaled to fit a page:
   // a name is 1/32 of the width (about 18px when the drawing is shown 580px wide), never below the old fixed sizes.

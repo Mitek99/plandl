@@ -9,4 +9,5 @@ docs/static/examples/
 docs/static/defaults.json
 docs/static/spec.txt
 docs/static/playground.js
+docs/static/viewer.js
 .DS_Store

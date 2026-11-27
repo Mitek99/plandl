@@ -1,8 +1,10 @@
 ---
 title: FH-114M reference house
+aliases:
+  - /reference-house/
 ---
 
-![Schematic PlanDL conversion of the FH-114M reference house](../reference-house.svg)
+{{< plandl-view name="reference-house" alt="Schematic PlanDL conversion of the FH-114M reference house" >}}
 
 This is a schematic conversion of the [FH-114M reference floor plan](https://full-houses.ru/media/images/projects/proekt-fh-114m-mode/mode-pryamoj-l.webp). It preserves the 11.875 m square grid envelope and the arrangement of bedrooms, bathrooms, laundry, hall, wardrobe, and combined living/kitchen space.
 
