@@ -15,7 +15,7 @@ node modules/cli/dist/cli.js check examples/step-by-step/03-windows.plandl
 
 {{< plandl-step name="01-shell" alt="A single rectangular room enclosed by four exterior walls" >}}
 
-`GRID` lays down the grid lines. `STEPS_X=[9m]` gives vertical lines at 0 and 9 m, and `STEPS_Y=[6m]` gives horizontal lines at 0 and 6 m. The Y axis points north.
+`GRID` lays down the grid lines. There is always a line at 0, so `LINES_X=[9m]` gives vertical lines at 0 and 9 m, and `LINES_Y=[6m]` gives horizontal lines at 0 and 6 m. The Y axis points north.
 
 `ROOM` selects a rectangle by grid-line index, not by length: `X=[0,1] Y=[0,1]` is the whole 9 × 6 m grid. You don't write the walls yourself. The compiler puts an exterior wall on each side that has no neighbouring room. A default exterior wall is 400 mm thick: 50 mm inside the grid line and 350 mm outside. That leaves an 8.9 × 5.9 m interior.
 
@@ -35,7 +35,7 @@ Windows use the same coordinates as doors. On the west wall the lowest coordinat
 
 {{< plandl-step name="04-partition" alt="An internal wall on a new grid line splits the house into Living and Bedroom" >}}
 
-The grid gets a second X step, which adds a grid line at 5.5 m. `Living` keeps `X=[0,1]`, so every opening that refers to `Living_…` still fits and nothing else in the source changes. `Bedroom` takes `X=[1,2]`.
+`LINES_X=[5.5m,9m]` adds a vertical grid line at 5.5 m and keeps the outer line at 9 m. Writing `[+5.5m,+3.5m]` or `[-3.5m,9m]` would give the same lines. `Living` keeps `X=[0,1]`, so every opening that refers to `Living_…` still fits and nothing else in the source changes. `Bedroom` takes `X=[1,2]`.
 
 The compiler puts a 100 mm internal wall on the shared grid line, centred on it.
 

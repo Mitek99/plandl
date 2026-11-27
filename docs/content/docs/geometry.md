@@ -5,7 +5,7 @@ weight: 4
 
 ## Grid coordinates
 
-The grid begins at zero. Each entry in `STEPS_X` or `STEPS_Y` adds one grid line after accumulating that step. For example, `[3m,2m,3m]` produces X coordinates 0, 3m, 5m, and 8m.
+The grid always has a line at 0. Each entry in `LINES_X` or `LINES_Y` adds one more line: absolute (`5m`), after the previous line (`+2m`), or before the next line (`-3m`). For example, `[3m,+2m,8m]` and `[+3m,-3m,8m]` both produce X coordinates 0, 3m, 5m, and 8m. Unresolvable `-` entries and lines that do not strictly increase are reported as `UNRESOLVED_GRID_LINE` and `GRID_LINES_NOT_INCREASING`.
 
 Rooms select rectangles using grid-line indices, not lengths. `X=[1,3]` in that grid selects the span from X=3m to X=8m. Rectangles must be nonempty and cannot overlap other declared rooms or terraces.
 
@@ -43,7 +43,7 @@ An inner door has two resolved definitions: the explicit source definition and a
 
 The resolver checks, among other rules:
 
-- Exactly one leading grid and valid positive steps.
+- Exactly one leading grid, resolvable grid lines, and strictly increasing line coordinates.
 - Unitless, in-range grid indices and nonempty room ranges.
 - Duplicate names and overlapping spaces.
 - Unknown, mixed-type, repeated, and cyclic merges.

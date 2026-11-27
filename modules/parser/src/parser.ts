@@ -25,7 +25,7 @@ const ROOM_INFERENCE = ["INNER_DIMENSIONS", "AREA"];
 const FURNITURE_FIELDS = ["WALL", "OFFSET", "PADDING", "WIDTH", "DEPTH"];
 
 function commandFields(command: string): { explicit: string[]; inferred: string[] } | undefined {
-  if (command === "GRID") return { explicit: ["STEPS_X", "STEPS_Y"], inferred: ["OUTER_DIMENSIONS", "OUTER_AREA", "PERIMETER"] };
+  if (command === "GRID") return { explicit: ["LINES_X", "LINES_Y"], inferred: ["OUTER_DIMENSIONS", "OUTER_AREA", "PERIMETER"] };
   if (command === "ROOM" || command === "TERRACE") return { explicit: ROOM_FIELDS, inferred: ROOM_INFERENCE };
   if (command === "DEFAULT") return { explicit: ["INNER_THICKNESS", "BEARING_THICKNESS", "OUTER_THICKNESS"], inferred: [] };
   if (command === "BEARING") return { explicit: ["X", "Y"], inferred: [] };
@@ -97,7 +97,7 @@ function tokenize(line: string, lineNumber: number, diagnostics: Diagnostic[]): 
       index = cursor;
       continue;
     }
-    if ("[],=-".includes(char)) {
+    if ("[],=-+".includes(char)) {
       tokens.push({ type: "symbol", text: char, value: char, column });
       index += 1;
       continue;
@@ -181,16 +181,23 @@ class LineParser {
   }
 
   private scalarOrString(): string | Scalar | null {
-    const negative = this.consume("-");
+    const signToken = this.peekToken();
+    const sign = this.consume("-") ? "-" : this.consume("+") ? "+" : undefined;
     const token = this.peekToken();
     if (token.type === "number") {
       this.take();
       const scalar = token.value as Scalar;
-      if (!negative) return scalar;
-      return { ...scalar, value: -scalar.value, raw: `-${scalar.raw}`, location: this.location(token) };
+      if (!sign) return scalar;
+      return {
+        ...scalar,
+        value: sign === "-" ? -scalar.value : scalar.value,
+        sign,
+        raw: `${sign}${scalar.raw}`,
+        location: this.location(signToken)
+      };
     }
-    if (negative) {
-      this.error("EXPECTED_SCALAR", "Expected a number after -.", token);
+    if (sign) {
+      this.error("EXPECTED_SCALAR", `Expected a number after ${sign}.`, token);
       return null;
     }
     if (token.type === "identifier" || token.type === "string") {
@@ -257,6 +264,15 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
       return null;
     }
     const allowed = infer ? schema.inferred : schema.explicit;
+    if (keyword === "GRID" && !infer && (field === "STEPS_X" || field === "STEPS_Y")) {
+      const replacement = field.replace("STEPS", "LINES");
+      parser.error(
+        "REPLACED_PARAMETER",
+        `GRID ${field} was replaced by ${replacement}. Write each step as a relative line, for example ${replacement}=[+3m,+3m].`,
+        fieldToken
+      );
+      return null;
+    }
     if (!allowed.includes(field)) {
       parser.error(
         "UNKNOWN_PARAMETER",
@@ -267,6 +283,19 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
     }
     const value = parser.value();
     if (value === null) return null;
+    const gridLines = keyword === "GRID" && !infer && (field === "LINES_X" || field === "LINES_Y");
+    if (!gridLines) {
+      const signed = (Array.isArray(value) ? value : [value]).find((entry) => typeof entry !== "string" && entry.sign === "+");
+      if (signed && typeof signed !== "string") {
+        diagnostics.push({
+          code: "UNEXPECTED_SIGN",
+          message: `${keyword} ${field} cannot use +. Relative values with + or - are only allowed in GRID LINES_X and LINES_Y.`,
+          severity: "error",
+          location: signed.location
+        });
+        return null;
+      }
+    }
     target[field] = value;
   }
 
@@ -280,14 +309,14 @@ function parseDefinition(line: string, lineNumber: number, diagnostics: Diagnost
   };
 
   if (keyword === "GRID") {
-    missing("STEPS_X");
-    missing("STEPS_Y");
-    const stepsX = scalarArray(fields.STEPS_X);
-    const stepsY = scalarArray(fields.STEPS_Y);
-    if (!stepsX?.length) invalid("STEPS_X", "a nonempty array of scalars");
-    if (!stepsY?.length) invalid("STEPS_Y", "a nonempty array of scalars");
+    missing("LINES_X");
+    missing("LINES_Y");
+    const linesX = scalarArray(fields.LINES_X);
+    const linesY = scalarArray(fields.LINES_Y);
+    if (!linesX?.length) invalid("LINES_X", "a nonempty array of lengths");
+    if (!linesY?.length) invalid("LINES_Y", "a nonempty array of lengths");
     if (diagnostics.length > initialDiagnostics) return null;
-    return { kind: "grid", stepsX: stepsX!, stepsY: stepsY!, inferred, location };
+    return { kind: "grid", linesX: linesX!, linesY: linesY!, inferred, location };
   }
 
   if (keyword === "ROOM" || keyword === "TERRACE") {

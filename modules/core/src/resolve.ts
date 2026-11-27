@@ -53,9 +53,65 @@ function gridIndex(scalar: Scalar, maximum: number, label: string, diagnostics: 
   return scalar.value;
 }
 
-function coordinates(steps: number[]): number[] {
+/**
+ * Resolves GRID LINES_X or LINES_Y into coordinates, starting with the implicit line at 0.
+ * Each entry is absolute (3m), measured from the previous line (+3m), or measured back
+ * from the next line (-3m). A run of "-" entries is anchored by the first non-"-" entry after it.
+ */
+function gridLines(entries: Scalar[], field: string, diagnostics: Diagnostic[]): number[] {
+  const kinds = entries.map((entry) => entry.sign ?? "absolute");
+  const amounts = entries.map((entry, index) => {
+    const label = `${field}[${index}] (${entry.raw})`;
+    return kinds[index] === "absolute"
+      ? length(entry, label, diagnostics, true)
+      : length({ ...entry, value: Math.abs(entry.value) }, label, diagnostics);
+  });
+  const lines: Array<number | undefined> = entries.map(() => undefined);
+  // Forward pass: absolute lines and "+" lines whose previous line is known.
+  for (let index = 0; index < entries.length; index += 1) {
+    const previous = index === 0 ? 0 : lines[index - 1];
+    if (kinds[index] === "absolute") lines[index] = amounts[index];
+    else if (kinds[index] === "+" && previous !== undefined) lines[index] = previous + amounts[index]!;
+  }
+  // Backward pass: "-" lines whose next line is known. A "-" followed by "+" stays unresolved:
+  // each would be measured from the other.
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const next = lines[index + 1];
+    if (kinds[index] === "-" && next !== undefined) lines[index] = next - amounts[index]!;
+  }
+
   const result = [0];
-  for (const step of steps) result.push(result[result.length - 1]! + step);
+  let reported = false;
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index]!;
+    const previous = result[result.length - 1]!;
+    let line = lines[index];
+    if (line === undefined) {
+      if (!reported) {
+        const reason = index === entries.length - 1
+          ? "it is the last line, so there is no next line to measure from"
+          : "the next line is itself relative to this one";
+        report(
+          diagnostics,
+          "UNRESOLVED_GRID_LINE",
+          `${field}[${index}] (${entry.raw}) is measured back from the next line, but ${reason}. Follow a -X entry with an absolute line or another -X entry.`,
+          entry.location
+        );
+        reported = true;
+      }
+      line = previous + 1;
+    } else if (!reported && line <= previous) {
+      report(
+        diagnostics,
+        "GRID_LINES_NOT_INCREASING",
+        `${field}[${index}] (${entry.raw}) resolves to ${line}mm, which is not after the previous line at ${previous}mm. Grid lines must increase, and the grid always starts with a line at 0.`,
+        entry.location
+      );
+      reported = true;
+      line = previous + 1;
+    }
+    result.push(line);
+  }
   return result;
 }
 
@@ -140,16 +196,16 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
   }
 
   const gridDefinition = gridDefinitions[0]!;
-  const stepsX = gridDefinition.stepsX.map((step, index) => length(step, `STEPS_X[${index}]`, diagnostics));
-  const stepsY = gridDefinition.stepsY.map((step, index) => length(step, `STEPS_Y[${index}]`, diagnostics));
-  const x = coordinates(stepsX);
-  const y = coordinates(stepsY);
+  const x = gridLines(gridDefinition.linesX, "LINES_X", diagnostics);
+  const y = gridLines(gridDefinition.linesY, "LINES_Y", diagnostics);
+  const countX = x.length - 1;
+  const countY = y.length - 1;
   const bearingX = new Set<number>();
   const bearingY = new Set<number>();
   for (const definition of document.definitions) {
     if (definition.kind !== "bearing") continue;
-    for (const entry of definition.x) bearingX.add(gridIndex(entry, stepsX.length, "BEARING X index", diagnostics));
-    for (const entry of definition.y) bearingY.add(gridIndex(entry, stepsY.length, "BEARING Y index", diagnostics));
+    for (const entry of definition.x) bearingX.add(gridIndex(entry, countX, "BEARING X index", diagnostics));
+    for (const entry of definition.y) bearingY.add(gridIndex(entry, countY, "BEARING Y index", diagnostics));
   }
 
   const insideAt = (axis: "X" | "Y", index: number): number => {
@@ -158,9 +214,9 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
   };
   const outsideAt = (axis: "X" | "Y", index: number): number => defaults.outerThickness - insideAt(axis, index);
   const minX = -outsideAt("X", 0);
-  const maxX = x[x.length - 1]! + outsideAt("X", stepsX.length);
+  const maxX = x[x.length - 1]! + outsideAt("X", countX);
   const minY = -outsideAt("Y", 0);
-  const maxY = y[y.length - 1]! + outsideAt("Y", stepsY.length);
+  const maxY = y[y.length - 1]! + outsideAt("Y", countY);
   const outerDimensions: [number, number] = [maxX - minX, maxY - minY];
   const grid: ResolvedGrid = {
     x,
@@ -181,12 +237,12 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
       continue;
     }
     const xRange: [number, number] = [
-      gridIndex(definition.x[0], stepsX.length, `${definition.name} X start`, diagnostics),
-      gridIndex(definition.x[1], stepsX.length, `${definition.name} X end`, diagnostics)
+      gridIndex(definition.x[0], countX, `${definition.name} X start`, diagnostics),
+      gridIndex(definition.x[1], countX, `${definition.name} X end`, diagnostics)
     ];
     const yRange: [number, number] = [
-      gridIndex(definition.y[0], stepsY.length, `${definition.name} Y start`, diagnostics),
-      gridIndex(definition.y[1], stepsY.length, `${definition.name} Y end`, diagnostics)
+      gridIndex(definition.y[0], countY, `${definition.name} Y start`, diagnostics),
+      gridIndex(definition.y[1], countY, `${definition.name} Y end`, diagnostics)
     ];
     if (xRange[0] >= xRange[1] || yRange[0] >= yRange[1]) {
       report(diagnostics, "INVALID_ROOM_RANGE", `${definition.name} must select a nonempty grid rectangle.`, definition.location);
@@ -273,7 +329,7 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
   }
 
   const spaceAtCell = (xIndex: number, yIndex: number): ResolvedRoom | undefined => {
-    if (xIndex < 0 || yIndex < 0 || xIndex >= stepsX.length || yIndex >= stepsY.length) return undefined;
+    if (xIndex < 0 || yIndex < 0 || xIndex >= countX || yIndex >= countY) return undefined;
     return spaces.find((room) => room.x[0] <= xIndex && room.x[1] > xIndex && room.y[0] <= yIndex && room.y[1] > yIndex);
   };
   const sameCompound = (a: ResolvedRoom | undefined, b: ResolvedRoom | undefined): boolean => Boolean(a && b && a.compound === b.compound);
@@ -370,8 +426,8 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
     };
   };
 
-  for (let xIndex = 0; xIndex <= stepsX.length; xIndex += 1) {
-    for (let yIndex = 0; yIndex < stepsY.length; yIndex += 1) {
+  for (let xIndex = 0; xIndex <= countX; xIndex += 1) {
+    for (let yIndex = 0; yIndex < countY; yIndex += 1) {
       const west = spaceAtCell(xIndex - 1, yIndex);
       const east = spaceAtCell(xIndex, yIndex);
       const interiorSide = west?.type === "ROOM" ? "LEFT" : east?.type === "ROOM" ? "RIGHT" : undefined;
@@ -386,8 +442,8 @@ export function resolvePlan(document: PlanDocument, parseDiagnostics: Diagnostic
       if (wall) plan.walls.push(wall);
     }
   }
-  for (let yIndex = 0; yIndex <= stepsY.length; yIndex += 1) {
-    for (let xIndex = 0; xIndex < stepsX.length; xIndex += 1) {
+  for (let yIndex = 0; yIndex <= countY; yIndex += 1) {
+    for (let xIndex = 0; xIndex < countX; xIndex += 1) {
       const south = spaceAtCell(xIndex, yIndex - 1);
       const north = spaceAtCell(xIndex, yIndex);
       const interiorSide = north?.type === "ROOM" ? "LEFT" : south?.type === "ROOM" ? "RIGHT" : undefined;

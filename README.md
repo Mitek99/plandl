@@ -33,7 +33,7 @@ Lengths accept `mm`, `cm`, and `m`; unitless lengths are millimetres. Areas acce
 ## Example
 
 ```text
-GRID STEPS_X=[3m,2m,3m] STEPS_Y=[1m,3m] INFER OUTER_DIMENSIONS=[8.7m,4.7m] OUTER_AREA=40.89sqm PERIMETER=26.8m
+GRID LINES_X=[+3m,+2m,+3m] LINES_Y=[+1m,+3m] INFER OUTER_DIMENSIONS=[8.7m,4.7m] OUTER_AREA=40.89sqm PERIMETER=26.8m
 DEFAULT INNER_THICKNESS=100mm BEARING_THICKNESS=250mm OUTER_THICKNESS=400mm
 ROOM NAME=Hall X=[0,1] Y=[1,2]
 ROOM NAME=Bedroom X=[1,3] Y=[1,2] INFER INNER_DIMENSIONS=[4.9m,2.9m] AREA=14.21sqm
@@ -53,10 +53,10 @@ INFER DOOR WALL=Hall_EAST OFFSET=1m WIDTH=0.8m HINGE=RIGHT OPENING=OUTWARD
 A plan starts with one `GRID` definition:
 
 ```text
-GRID STEPS_X=[1m,2m] STEPS_Y=[3m]
+GRID LINES_X=[1m,+2m] LINES_Y=[3m]
 ```
 
-Steps are distances between adjacent grid lines. This example creates vertical lines at X=0, X=1m, and X=3m, and horizontal lines at Y=0 and Y=3m. The Y axis points north. Wall thickness does not change grid coordinates.
+There is always a grid line at 0, and `LINES_X`/`LINES_Y` list the lines after it. Each entry is absolute (`3m`), measured from the previous line (`+3m`), or measured back to the next line (`-3m`), and the forms can be mixed: `[3m,6m,9m,12m]`, `[+3m,+3m,+3m,+3m]`, and `[3m,+3m,-3m,12m]` all give lines at 0, 3, 6, 9, and 12m. This example creates vertical lines at X=0, X=1m, and X=3m, and horizontal lines at Y=0 and Y=3m. The Y axis points north. Wall thickness does not change grid coordinates.
 
 ## Rooms, terraces, and compound spaces
 
@@ -70,7 +70,7 @@ TERRACE NAME=Patio X=[0,1] Y=[0,1]
 A room or terrace can merge other spaces of the same type:
 
 ```text
-GRID STEPS_X=[2m,2m] STEPS_Y=[3m,0.6m]
+GRID LINES_X=[+2m,+2m] LINES_Y=[+3m,+0.6m]
 ROOM NAME=Wardrobe X=[0,1] Y=[1,2]
 ROOM NAME=Bedroom X=[0,2] Y=[0,1] MERGE=[Wardrobe]
 ```
@@ -94,7 +94,7 @@ Inner and bearing walls are centered on grid lines. Outer walls put half the app
 `INFER` marks compiler-derived properties:
 
 ```text
-GRID STEPS_X=[3m,2m,3m] STEPS_Y=[1m,3m] INFER OUTER_DIMENSIONS=[8.7m,4.7m] OUTER_AREA=40.89sqm PERIMETER=26.8m
+GRID LINES_X=[+3m,+2m,+3m] LINES_Y=[+1m,+3m] INFER OUTER_DIMENSIONS=[8.7m,4.7m] OUTER_AREA=40.89sqm PERIMETER=26.8m
 ROOM NAME=Bedroom X=[1,3] Y=[1,2] INFER INNER_DIMENSIONS=[4.9m,2.9m] AREA=14.21sqm
 ```
 

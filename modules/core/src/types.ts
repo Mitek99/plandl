@@ -15,6 +15,8 @@ export type ScalarUnit = "mm" | "cm" | "m" | "sqm";
 export interface Scalar {
   value: number;
   unit?: ScalarUnit;
+  /** Explicit leading sign in source. A "-" scalar also has a negative value. */
+  sign?: "+" | "-";
   raw: string;
   location: SourceLocation;
 }
@@ -28,8 +30,9 @@ interface DefinitionBase {
 
 export interface GridDefinition extends DefinitionBase {
   kind: "grid";
-  stepsX: Scalar[];
-  stepsY: Scalar[];
+  /** Grid lines after the implicit line at 0: absolute (3m), from the previous line (+3m), or to the next line (-3m). */
+  linesX: Scalar[];
+  linesY: Scalar[];
   inferred: InferredProperties;
 }
 

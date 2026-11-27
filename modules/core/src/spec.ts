@@ -1,4 +1,4 @@
-export const PLANDL_SPEC = `PlanDL 0.2
+export const PLANDL_SPEC = `PlanDL 0.3
 
 PlanDL is a line-oriented DSL for rectangular grid-based floor plans.
 
@@ -9,9 +9,10 @@ LEXICAL RULES
 - Strings may be bare words or double-quoted strings. Arrays use commas: [one,two].
 - Lengths accept mm, cm, and m suffixes. Unitless lengths are millimetres.
 - Areas accept sqm. Grid indices are unitless integers.
+- A leading + or - is only allowed in GRID LINES_X and LINES_Y.
 
 DEFINITIONS
-GRID STEPS_X=[length,...] STEPS_Y=[length,...] [INFER OUTER_DIMENSIONS=[length,length] OUTER_AREA=area PERIMETER=length]
+GRID LINES_X=[line,...] LINES_Y=[line,...] [INFER OUTER_DIMENSIONS=[length,length] OUTER_AREA=area PERIMETER=length]
 ROOM NAME=name X=[start_index,end_index] Y=[start_index,end_index] [MERGE=[name,...]] [INFER INNER_DIMENSIONS=[length,length] AREA=area]
 TERRACE NAME=name X=[start_index,end_index] Y=[start_index,end_index] [MERGE=[name,...]] [INFER INNER_DIMENSIONS=[length,length] AREA=area]
 DEFAULT [INNER_THICKNESS=length] [BEARING_THICKNESS=length] [OUTER_THICKNESS=length]
@@ -23,7 +24,10 @@ OPENING WALL=RoomName_SIDE OFFSET=length WIDTH=length
 [INFER] WINDOW|DOOR|OPENING ...
 
 GRID AND ROOMS
-- GRID is the first and only grid definition. Coordinates start at zero and each step adds one grid line.
+- GRID is the first and only grid definition. There is always a grid line at 0; LINES_X and LINES_Y list the lines after it.
+- Each line is absolute (3m), +X from the previous line (+3m), or -X back from the next line (-3m).
+- These are equivalent: [3m,6m,9m,12m], [+3m,+3m,+3m,+3m], [3m,+3m,-3m,12m]. Each gives lines at 0, 3, 6, 9 and 12m.
+- A -X line needs a next line that is absolute or another -X line. Lines must strictly increase, so 0 is never listed.
 - ROOM and TERRACE bounds are grid-line index ranges. Walls cannot be off-grid.
 - The Y axis points north. Room and terrace names are unique.
 - MERGE creates a compound space. Rooms merge only rooms and terraces merge only terraces.

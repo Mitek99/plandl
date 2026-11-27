@@ -10,20 +10,32 @@ Each nonempty line contains one command followed by space-separated parameters. 
 Values can be strings, scalars, or arrays. Strings can be bare words such as `Bedroom` or double-quoted text such as `"Main bedroom"`. Arrays use commas:
 
 ```text
-GRID STEPS_X=[3m,2m,3m] STEPS_Y=[1m,3m]
+GRID LINES_X=[3m,+2m,8m] LINES_Y=[1m,4m]
 ```
 
 Lengths accept `mm`, `cm`, and `m` suffixes; unitless lengths are millimetres. Areas use `sqm`. Grid indices are unitless integers.
 
 ## Grid
 
-A plan starts with one `GRID` definition. Each step is the distance to the next grid line, and the grid starts at coordinate zero:
+A plan starts with one `GRID` definition. There is always a grid line at 0. `LINES_X` and `LINES_Y` list the lines after it, and each entry can be written three ways:
+
+- `3m` is an absolute line at 3 m.
+- `+3m` is 3 m after the previous line. The first entry's previous line is 0.
+- `-3m` is 3 m before the next line.
+
+You can mix the three forms in one list. These three lists produce the same lines, at 0, 3, 6, 9 and 12 m:
 
 ```text
-GRID STEPS_X=[1m,2m] STEPS_Y=[3m]
+GRID LINES_X=[3m,6m,9m,12m] LINES_Y=[4m]
+GRID LINES_X=[+3m,+3m,+3m,+3m] LINES_Y=[4m]
+GRID LINES_X=[3m,+3m,-3m,12m] LINES_Y=[4m]
 ```
 
-This creates vertical grid lines at X=0, X=1m, and X=3m, and horizontal lines at Y=0 and Y=3m. Wall thickness does not change grid coordinates.
+Use absolute lines for known overall dimensions, `+` for room widths measured from one side, and `-` for room widths measured back from a fixed line. For example, `[2.5m,+1.8m,-3.875m,11.875m]` fixes the envelope at 11.875 m and makes the last bay 3.875 m wide.
+
+A `-` entry needs a next line that is absolute or another `-` entry. A trailing `-` entry, or a `-` entry followed by a `+` entry, is an error because neither line can be placed. Lines must strictly increase, so 0 itself is never listed. Wall thickness does not change grid coordinates.
+
+`STEPS_X` and `STEPS_Y` from PlanDL 0.2 were replaced by `LINES_X` and `LINES_Y`. A 0.2 step list converts by putting `+` before each step.
 
 ## Rooms and terraces
 
@@ -37,7 +49,7 @@ TERRACE NAME=Patio X=[0,1] Y=[0,1]
 ### Compound rooms
 
 ```text
-GRID STEPS_X=[2m,2m] STEPS_Y=[3m,0.6m]
+GRID LINES_X=[+2m,+2m] LINES_Y=[+3m,+0.6m]
 ROOM NAME=Wardrobe X=[0,1] Y=[1,2]
 ROOM NAME=Bedroom X=[0,2] Y=[0,1] MERGE=[Wardrobe]
 ```
@@ -57,7 +69,7 @@ BEARING Y=[1]
 ## Inference
 
 ```text
-GRID STEPS_X=[3m,2m,3m] STEPS_Y=[1m,3m] INFER OUTER_DIMENSIONS=[8.7m,4.7m] OUTER_AREA=40.89sqm PERIMETER=26.8m
+GRID LINES_X=[+3m,+2m,+3m] LINES_Y=[+1m,+3m] INFER OUTER_DIMENSIONS=[8.7m,4.7m] OUTER_AREA=40.89sqm PERIMETER=26.8m
 ROOM NAME=Bedroom X=[1,3] Y=[1,2] INFER INNER_DIMENSIONS=[4.9m,2.9m] AREA=14.21sqm
 ```
 
