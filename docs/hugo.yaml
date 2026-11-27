@@ -1,4 +1,4 @@
-baseURL: https://mitek99.github.io/plandl/
+baseURL: https://plandl.org/
 title: PlanDL
 module:
   imports:

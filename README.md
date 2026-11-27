@@ -148,7 +148,7 @@ npm run site:serve
 
 ## AWS deployment
 
-The documentation is published at [https://d3eb034fkslao0.cloudfront.net/](https://d3eb034fkslao0.cloudfront.net/) from a private S3 bucket through CloudFront. With AWS credentials configured, rebuild, upload, and invalidate the distribution with:
+The documentation is published at [https://plandl.org/](https://plandl.org/) from a private S3 bucket through CloudFront. With AWS credentials configured, rebuild, upload, and invalidate the distribution with:
 
 ```sh
 npm run site:deploy:aws
