@@ -34,7 +34,7 @@ function line(start: Point, end: Point, frame: Frame, attributes: string): strin
 
 function text(point: Point, frame: Frame, value: string, size = 160, weight = 400): string {
   const projected = project(point, frame);
-  return `<text x="${format(projected.x)}" y="${format(projected.y)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${size}" font-weight="${weight}" fill="#1a202c">${escapeXml(value)}</text>`;
+  return `<text x="${format(projected.x)}" y="${format(projected.y)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="${format(size)}" font-weight="${weight}" fill="#1a202c" stroke="#f7fafc" stroke-width="${format(size * 0.25)}" stroke-linejoin="round" paint-order="stroke">${escapeXml(value)}</text>`;
 }
 
 function endpointKey(point: Point): string {
@@ -178,6 +178,10 @@ export function renderSvg(plan: ResolvedPlan): string {
     output.push(renderFurniture(furniture, frame));
   }
 
+  // Label sizes follow the drawing width so labels stay readable once the SVG is scaled to fit a page:
+  // a name is 1/32 of the width (about 18px when the drawing is shown 580px wide), never below the old fixed sizes.
+  const nameSize = Math.max(180, width / 32);
+  const areaSize = Math.max(140, width / 40);
   const mergedChildren = new Set(spaces.flatMap((room) => room.merge));
   for (const room of spaces) {
     if (mergedChildren.has(room.name)) continue;
@@ -194,8 +198,8 @@ export function renderSvg(plan: ResolvedPlan): string {
       center.x /= weight;
       center.y /= weight;
     }
-    output.push(text(center, frame, room.name, 180, 600));
-    output.push(text({ x: center.x, y: center.y - 220 }, frame, `${format(room.area / 1e6)} m²`, 140));
+    output.push(text(center, frame, room.name, nameSize, 600));
+    output.push(text({ x: center.x, y: center.y - nameSize * 1.25 }, frame, `${format(room.area / 1e6)} m²`, areaSize));
   }
   output.push("</svg>");
   return `${output.join("\n")}\n`;
