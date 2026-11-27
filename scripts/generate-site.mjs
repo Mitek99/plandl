@@ -1,9 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { build } from "esbuild";
 
 const cli = "modules/cli/dist/cli.js";
 const outputDirectory = "docs/static/examples";
+// Generated output only (gitignored): start clean so removed examples are not published.
+rmSync(outputDirectory, { recursive: true, force: true });
 mkdirSync(outputDirectory, { recursive: true });
 
 function checkAndCompile(source, output) {
