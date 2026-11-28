@@ -2,6 +2,8 @@
 title: Agent review of PlanDL 0.2
 linkTitle: Agent review of 0.2
 date: 2026-11-27
+sidebar:
+  hide: true
 ---
 
 {{< review-style >}}
