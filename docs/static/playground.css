@@ -1,7 +1,10 @@
+/* Hallmark · checked · playground: the editor on graphite, the plan on a white plate, live status as text under it · theme: Cobalt, tokens from css/tokens.css · v2.0.0 */
+/* The playground (shortcodes/plandl-playground.html). Colours, type and spacing come from css/tokens.css. */
+
 .plandl-playground {
   display: grid;
-  gap: 1rem;
-  margin: 1.5rem 0;
+  gap: var(--space-lg);
+  margin: 0;
 }
 
 .plandl-editor,
@@ -9,23 +12,40 @@
   min-width: 0;
 }
 
+.plandl-editor {
+  display: flex;
+  flex-direction: column;
+}
+
 .plandl-editor label {
   display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--color-graphite-2);
+  color: var(--color-graphite-muted);
+  font: 500 var(--text-sm) / 1.4 var(--font-display);
 }
 
 #plandl-editor {
+  flex: 1;
   box-sizing: border-box;
   width: 100%;
   min-height: 32rem;
-  padding: 0.85rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  background: #f8fafc;
-  color: #0f172a;
-  font: 0.82rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin: 0;
+  padding: var(--space-md);
+  border: var(--rule-hair) solid var(--color-editor-edge);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  background: var(--color-graphite);
+  color: var(--color-graphite-ink);
+  caret-color: var(--color-accent-2);
+  font: 400 0.8125rem / 1.6 var(--font-outlier);
   resize: vertical;
+}
+
+#plandl-editor:focus-visible {
+  outline: 2px solid var(--color-accent-2);
+  outline-offset: -2px;
 }
 
 .plandl-preview {
@@ -35,9 +55,10 @@
 
 #plandl-preview {
   overflow: hidden;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  background: white;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background: var(--color-plate);
+  box-shadow: var(--shadow-card);
 }
 
 #plandl-preview svg {
@@ -49,61 +70,104 @@
 .plandl-grid-label {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
+  justify-self: end;
+  gap: var(--space-xs);
+  min-height: 44px;
+  margin-top: var(--space-2xs);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.plandl-grid-label:hover { color: var(--color-ink); }
+.plandl-grid-label:active { color: var(--color-accent-deep); }
+
+.plandl-grid-label input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--color-accent);
   cursor: pointer;
 }
 
+.plandl-grid-label input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.plandl-grid-label input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 #plandl-status {
-  margin: 0.6rem 0 0;
-  font-size: 0.85rem;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding-top: var(--space-sm);
+  border-top: var(--rule-hair) solid var(--color-rule);
+  color: var(--color-ink-2);
+  font: 500 var(--text-sm) / 1.5 var(--font-display);
 }
 
 #plandl-status[data-state="valid"] {
-  color: #24745a;
+  color: var(--color-success);
 }
 
 #plandl-status[data-state="error"],
 #plandl-diagnostics {
-  color: #b42318;
+  color: var(--color-error);
 }
 
 #plandl-status[data-state="warning"],
 #plandl-diagnostics li[data-severity="warning"] {
-  color: #b45309;
+  color: var(--color-warning);
 }
 
 #plandl-diagnostics {
-  margin: 0;
-  padding-left: 1.25rem;
-  font: 0.78rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin: var(--space-xs) 0 0;
+  padding-left: var(--space-lg);
+  font: 400 0.8125rem / 1.55 var(--font-outlier);
+}
+
+#plandl-diagnostics li + li {
+  margin-top: var(--space-2xs);
 }
 
 @media (min-width: 1100px) {
+  /* The editor stands exactly as tall as the plan plate; the toggle and status run under the plate. */
   .plandl-playground {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    column-gap: var(--space-lg);
+    row-gap: 0;
+    align-items: stretch;
   }
-}
 
-@media (prefers-color-scheme: dark) {
+  .plandl-preview {
+    display: contents;
+  }
+
+  .plandl-editor {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
   #plandl-editor {
-    border-color: #475569;
-    background: #0f172a;
-    color: #e2e8f0;
+    height: 0;
+    min-height: 0;
+    resize: none;
   }
 
   #plandl-preview {
-    border-color: #475569;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
   }
 
-  #plandl-status[data-state="valid"] {
-    color: #6fd3ac;
-  }
-
-  #plandl-status[data-state="warning"],
-  #plandl-diagnostics li[data-severity="warning"] {
-    color: #f6ad55;
+  .plandl-grid-label,
+  #plandl-status,
+  #plandl-diagnostics {
+    grid-column: 2;
   }
 }

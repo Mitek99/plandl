@@ -1,11 +1,16 @@
+/* Hallmark · checked · plan viewer: the renderer's white sheet on a hairline plate, the grid toggle under it, check output on paper · theme: Cobalt, tokens from css/tokens.css · v2.0.0 */
+/* In-page plan viewers (partials/plandl-view.html) and the tutorial's check output. Tokens come from css/tokens.css. */
+
 .plandl-view {
-  margin: 1.25rem 0;
+  margin: var(--space-xl) 0 var(--space-lg);
 }
 
 .plandl-view-canvas {
   overflow: hidden;
-  border-radius: 0.5rem;
-  background: white;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background: var(--color-plate);
+  box-shadow: var(--shadow-card);
 }
 
 .plandl-view-canvas svg,
@@ -15,21 +20,42 @@
   height: auto;
 }
 
-.plandl-view-controls,
-.plandl-grid-label {
+.plandl-view-controls {
   display: flex;
   justify-content: flex-end;
-  margin-top: 0.4rem;
-  font-size: 0.85rem;
+  margin-top: var(--space-2xs);
+  font-size: var(--text-sm);
 }
 
-.plandl-view-controls label,
-.plandl-grid-label {
+.plandl-view-controls label {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--space-xs);
+  min-height: 44px;
+  color: var(--color-ink-2);
   cursor: pointer;
   user-select: none;
+}
+
+.plandl-view-controls label:hover { color: var(--color-ink); }
+.plandl-view-controls label:active { color: var(--color-accent-deep); }
+
+.plandl-view-controls input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.plandl-view-controls input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.plandl-view-controls input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .plandl-view-controls[hidden] {
@@ -38,13 +64,25 @@
 
 .plandl-view-error {
   margin: 0;
-  padding: 1rem;
-  color: #b42318;
-  font: 0.8rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: var(--space-md);
+  color: var(--color-error);
+  font: 400 0.8125rem / 1.5 var(--font-outlier);
   white-space: pre-wrap;
 }
 
-/* plandl check output under tutorial steps: wrap long warnings instead of scrolling. */
+/* plandl check output under tutorial steps: output on paper, source on graphite. Wrap long warnings instead of scrolling. */
+.plandl-check {
+  margin-top: var(--space-sm);
+}
+
+.plandl-check .highlight .chroma,
+.plandl-check pre,
+.plandl-check .hextra-code-block pre:not(.lntable pre) {
+  border: var(--rule-hair) solid var(--color-rule-2);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+}
+
 .plandl-check pre,
 .plandl-check code,
 .plandl-check .line,
@@ -55,4 +93,10 @@
 
 .plandl-check .line {
   display: block !important;
+}
+
+.plandl-check .hextra-code-copy-btn {
+  background: var(--color-paper);
+  border-color: var(--color-rule-2);
+  color: var(--color-ink-2);
 }

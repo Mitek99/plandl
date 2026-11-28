@@ -30,7 +30,7 @@ params:
     displayLogo: false
   footer:
     displayCopyright: false
-    displayPoweredBy: true
+    displayPoweredBy: false
   editURL:
     enable: true
     base: https://github.com/Mitek99/plandl/edit/main/docs/content

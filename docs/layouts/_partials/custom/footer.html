@@ -1,0 +1,11 @@
+{{- /* Footer mast: the wordmark over the site's own links. Hextra adds "Powered by Hextra" below. */ -}}
+<div class="pd-footer">
+  <a class="pd-footer-mark" href="{{ site.Home.RelPermalink }}">{{ site.Title }}</a>
+  <ul class="pd-footer-links">
+    {{- range site.Menus.main }}
+      {{- $link := .URL -}}
+      {{- with .PageRef }}{{ $link = relLangURL (strings.TrimPrefix "/" .) }}{{ end }}
+      <li><a href="{{ $link }}">{{ .Name }}</a></li>
+    {{- end }}
+  </ul>
+</div>

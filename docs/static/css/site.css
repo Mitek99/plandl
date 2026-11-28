@@ -1,0 +1,509 @@
+/* Hallmark · shape: Workbench (/) and Long Document (docs, examples) · genre: modern-minimal · theme: Cobalt (deal 2/3, seed documentation-small-strict-floor-plan-823d·2b8346f0·2026-11-28·r0) · redesign: full
+ * hero: Stage (/), Banner (docs, examples) · nav: kept Hextra bar, a wordmark left and three links right · footer: a mast, the wordmark over the menu links, Hextra credit · imagery: the product (plans rendered live by viewer.js and playground.js) · signature: the plan drawn by the real renderer as a white drafting plate, and the playground as a graphite editor beside it
+ * axes: light/grotesk-sans/cool · posture: restrained · modes: light+dark · job: try (read the docs, edit a plan) · copy: verbatim · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: P, a docs site argues little; the hero leads with a real compiled plan instead of a slogan, and the page ends on the working playground */
+/* Hallmark · finish-review: subagent · 6 findings · 6 resolved (hero fold, editor height and status rule, dark graphite, footer credit, theme switch row, phone hero gap) · owner: examples index order differs from the sidebar */
+/* Hallmark · waive 42 · kept Hextra bar, a wordmark left and three links right · the docs nav and its mobile menu are the theme's own wiring */
+/* Hallmark · waive 77 · section.pd-statement and the Deliberately small section are the owner's prose set as statements · the page's pictures are the compiled plan in the hero and the playground below, and copy is kept verbatim */
+/* Hallmark · waive 49b · the docs pager links are real page titles, Geometry and validation among them · Hextra caps each at half the 320px row */
+/* Hallmark · dropped https://github.com/Mitek99/plandl/edit/main/docs/content/_index.md, plandl · the front page's edit link and duplicate PlanDL title heading go; the front page no longer carries the docs table of contents or title; every docs and example page keeps both */
+/* Hallmark · waive 59 · docs and example pages are a Long Document separated by hairline rules above each h2 · section heads sit 64 to 96px apart so reference reading stays dense */
+/* Hallmark · dismissed 41 · the repaint rule only swaps Hextra's literal white and #111 panels for the paper; text on them inherits the ink token in both modes */
+/* Hallmark · answered F19 · Hextra's sidebar and table of contents set a 600 for the active item; the site's own type uses 400, 500 and 600 */
+@import url("./tokens.css");
+@import url("./base.css");
+
+/* ---------- Chrome: Hextra's bar, sidebar, table of contents and footer ---------- */
+
+body { font-size: 1.0625rem; }
+
+/* Hextra paints its bar and sticky panels in literal white and #111; repaint them in the paper. */
+html .hextra-nav-container .hextra-nav-container-blur {
+  background-color: transparent;
+  background: color-mix(in oklab, var(--color-paper) 90%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 -1px 0 var(--color-rule);
+}
+
+html :is([class*="hx:bg-white"], [class*="hx:dark:bg-dark"]):not(.hextra-nav-container-blur):not(.hextra-code-copy-btn) {
+  background-color: var(--color-paper);
+}
+html [class*="hx:shadow-[0_-12px_16px"] { box-shadow: 0 -12px 16px var(--color-paper); }
+
+.hextra-nav-container nav { gap: var(--space-lg); }
+.hextra-nav-container nav > a:first-child span {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+.hextra-nav-container nav > a {
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  text-decoration: none;
+}
+.hextra-nav-container nav > a:hover { color: var(--color-ink); }
+.hextra-nav-container nav > a[aria-current="true"],
+.hextra-nav-container nav > a[aria-current="page"] { color: var(--color-ink); font-weight: 500; }
+
+.hextra-sidebar-container { background: var(--color-paper); }
+.hextra-sidebar-container a { color: var(--color-ink-2); }
+.hextra-sidebar-container a:hover { color: var(--color-ink); background: var(--color-paper-2); }
+.hextra-sidebar-item[data-active="true"] > a {
+  color: var(--color-ink);
+  background: var(--color-accent-wash);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+  border-radius: 0 var(--radius-input) var(--radius-input) 0;
+}
+
+.hextra-theme-toggle { min-height: 44px; color: var(--color-muted); }
+.hextra-theme-toggle-options { background: var(--color-paper); border-color: var(--color-rule); box-shadow: var(--shadow-card); }
+
+.hextra-toc a { color: var(--color-muted); }
+.hextra-toc a:hover { color: var(--color-ink); }
+.hextra-toc p { font-family: var(--font-display); font-weight: 500; color: var(--color-ink); }
+
+.hextra-footer {
+  background: var(--color-paper-2);
+  border-top: var(--rule-hair) solid var(--color-rule);
+  color: var(--color-muted);
+}
+.hextra-footer a { color: var(--color-muted); }
+/* One footer: the mast, then (where the page has no sidebar) the theme switch under its links. */
+.hextra-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding-inline: max(var(--space-lg), calc((100% - var(--site-width)) / 2 + var(--space-lg)));
+}
+.hextra-footer > * { max-width: none; margin-inline: 0; padding-inline: 0; }
+.hextra-footer > hr { display: none; }
+.hextra-footer > .hextra-custom-footer { grid-column: 1 / -1; grid-row: 1; }
+.hextra-footer > div:first-child:not(.hextra-custom-footer) { grid-column: 1 / -1; grid-row: 2; justify-content: flex-end; margin-top: calc(-1 * var(--space-xl)); padding-block: 0 var(--space-lg); }
+.hextra-footer > div:last-child:not(.hextra-custom-footer) { grid-column: 1; grid-row: 2; justify-content: flex-start; padding-block: var(--space-lg); }
+.hextra-footer > div:last-child:not(.hextra-custom-footer) > div { align-items: flex-start; }
+.hextra-footer svg { display: inline-block; }
+.hextra-footer a:hover { color: var(--color-ink); }
+.pd-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding-block: var(--space-2xl);
+}
+.pd-footer-mark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+.hextra-footer .pd-footer-mark { color: var(--color-ink); }
+.pd-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pd-footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-ink-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pd-footer-links a:hover { color: var(--color-ink); text-decoration: underline; text-decoration-color: var(--color-accent); }
+
+/* ---------- Docs and examples: the reading column ---------- */
+
+main#content:not(.pd-home) > h1,
+main#content:not(.pd-home) h1:first-of-type {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-doc-title);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.05;
+  color: var(--color-ink);
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-xl);
+  text-align: left;
+  max-width: 20ch;
+}
+
+.content { color: var(--color-ink); }
+.content :where(p, li, dd) { max-width: var(--content-measure); line-height: 1.65; }
+.content :where(p) { margin-top: var(--space-md); }
+.content > p:first-child { font-size: var(--text-lead); line-height: 1.5; color: var(--color-ink-2); max-width: 60ch; }
+
+.content h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-doc-h2);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  max-width: none;
+  color: var(--color-ink);
+  margin-top: var(--space-2xl);
+  margin-bottom: var(--space-sm);
+  padding-top: var(--space-lg);
+  padding-bottom: 0;
+  border-bottom: 0;
+  border-top: var(--rule-hair) solid var(--color-rule);
+}
+.content > h2:first-child,
+.content > div:first-child + h2 { margin-top: var(--space-lg); }
+.content h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-doc-h3);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--color-ink);
+  margin-top: var(--space-2xl);
+  margin-bottom: var(--space-xs);
+}
+.content :where(h4, h5, h6) { font-family: var(--font-display); font-weight: 500; color: var(--color-ink); }
+.content strong { font-weight: 600; color: var(--color-ink); }
+
+.content a:not(.subheading-anchor, .pd-key, .pd-example-title, .pd-example-plate) {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+.content a:not(.subheading-anchor, .pd-key, .pd-example-title, .pd-example-plate):hover { color: var(--color-accent-deep); text-decoration-color: var(--color-accent); }
+
+.content :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: 4px;
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-family: var(--font-outlier);
+  font-size: 0.86em;
+  font-weight: 400;
+}
+
+.content :where(ul, ol) { margin-top: var(--space-md); }
+.content li { margin-top: var(--space-2xs); }
+.content li::marker { color: var(--color-muted); }
+
+.content hr { border-color: var(--color-rule); }
+.content blockquote { border-color: var(--color-accent); color: var(--color-ink-2); font-style: normal; }
+
+/* Tables: ruled, no stripes, heads in the body face. */
+.content table { display: table; width: 100%; border-collapse: collapse; margin-top: var(--space-lg); font-size: var(--text-sm); }
+.content table tr { background: transparent; border: 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+.content table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--color-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: var(--rule-hair) solid var(--color-rule-2);
+  padding: var(--space-xs) var(--space-sm) var(--space-xs) 0;
+}
+.content table td { border: 0; padding: var(--space-sm) var(--space-sm) var(--space-sm) 0; vertical-align: top; }
+.content table tr:nth-child(even),
+.content table :is(thead, thead tr, tbody) { background: transparent; }
+
+/* Code blocks: source on graphite. */
+.hextra-code-block { margin-top: var(--space-lg); font-size: 0.875rem; line-height: 1.6; }
+.hextra-code-block pre:not(.lntable pre),
+.content pre {
+  background: var(--color-graphite);
+  color: var(--color-graphite-ink);
+  border: var(--rule-hair) solid var(--color-graphite);
+  border-radius: var(--radius-card);
+  padding: var(--space-md) var(--space-lg);
+  font-family: var(--font-outlier);
+  font-weight: 400;
+}
+.hextra-code-block code, .content pre code { font-family: var(--font-outlier); color: inherit; background: transparent; border: 0; padding: 0; }
+.highlight .chroma { background: var(--color-graphite); color: var(--color-graphite-ink); }
+.highlight .chroma :is(span, .line, .cl) { color: inherit; background: transparent; font-weight: 400; font-style: normal; }
+.highlight .chroma :is(.c, .c1, .cm, .cs, .ch, .cp, .cpf, .gh, .gu) { color: var(--color-graphite-muted); }
+.highlight .chroma :is(.s, .s1, .s2, .sb, .sc, .sd, .se, .sh, .si, .sx, .m, .mi, .mf, .mh, .il, .na) { color: var(--color-accent-2); }
+.highlight .chroma :is(.k, .kd, .kn, .kr, .kt, .kc, .nb, .nt, .nf) { color: var(--color-graphite-ink); font-weight: 500; }
+.highlight .chroma .gi { color: var(--color-diff-add); background: var(--color-diff-add-wash); }
+.highlight .chroma .gd { color: var(--color-diff-del); background: var(--color-diff-del-wash); }
+.highlight .chroma .line:has(> .cl > .gi) { background: var(--color-diff-add-wash); }
+.highlight .chroma .line:has(> .cl > .gd) { background: var(--color-diff-del-wash); }
+
+.hextra-code-copy-btn-container { opacity: 0; transition: opacity var(--dur-micro) var(--ease-out); }
+.hextra-code-block:hover .hextra-code-copy-btn-container,
+.hextra-code-block:focus-within .hextra-code-copy-btn-container { opacity: 1; }
+.hextra-code-copy-btn {
+  background: var(--color-graphite-2);
+  border-color: var(--color-graphite-muted);
+  color: var(--color-graphite-ink);
+  transition: background-color var(--dur-micro) var(--ease-out), opacity var(--dur-micro) var(--ease-out);
+}
+.hextra-code-copy-btn:hover { background: var(--color-graphite); color: var(--color-graphite-ink); }
+.hextra-code-copy-btn:active { opacity: 0.7; }
+
+/* Disclosure: "Full source after this step". */
+.content details { margin-top: var(--space-lg); border-top: var(--rule-hair) solid var(--color-rule); }
+.content details > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--color-ink-2);
+  font-weight: 500;
+}
+.content details > summary:hover { color: var(--color-ink); }
+
+/* Focus: one instant ring everywhere, including Hextra's own controls. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* ---------- The front page ---------- */
+
+.pd-home { padding-bottom: 0; }
+.pd-home > section {
+  width: 100%;
+  max-width: var(--site-width);
+  margin-inline: auto;
+  padding-inline: var(--space-lg);
+}
+
+/* Hero: Stage. The text on five tracks, the compiled plan on eight. */
+.pd-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+  align-items: center;
+  gap: var(--space-2xl);
+  min-height: calc(100svh - var(--hextra-navbar-height) - var(--space-3xl));
+  padding-block: var(--space-xl);
+}
+.pd-hero h1 {
+  font-size: var(--text-hero);
+  line-height: 1.02;
+  max-width: 11ch;
+  color: var(--color-ink);
+}
+.pd-lead {
+  margin-top: var(--space-lg);
+  max-width: 30ch;
+  font-size: var(--text-lead);
+  line-height: 1.45;
+  color: var(--color-ink-2);
+}
+.pd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-xl);
+}
+.pd-aside { margin-top: var(--space-lg); font-size: var(--text-sm); }
+.pd-aside a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-ink-2);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule-2);
+  text-underline-offset: 0.25em;
+  transition: text-decoration-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+.pd-aside a:hover { color: var(--color-ink); text-decoration-color: var(--color-accent); }
+.pd-aside a:active { color: var(--color-accent-deep); }
+
+/* Keycaps: a real bottom edge, lift on hover, sink on press. */
+.pd-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--space-lg);
+  border: var(--rule-hair) solid var(--color-rule-2);
+  border-radius: var(--radius-input);
+  background: var(--color-key-face);
+  color: var(--color-ink);
+  font: 500 var(--text-md) / 1 var(--font-display);
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-key);
+  transition: transform var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) var(--ease-out);
+}
+.pd-key:hover { transform: translateY(-1px); color: var(--color-ink); }
+.pd-key:active { transform: translateY(3px); box-shadow: var(--shadow-key-press); }
+.pd-key--primary { background: var(--color-accent); border-color: var(--color-accent-edge); color: var(--color-accent-ink); box-shadow: var(--shadow-key-accent); }
+.pd-key--primary:hover { color: var(--color-accent-ink); }
+
+/* The plan plate: the renderer's white sheet, edged in a hairline. */
+.pd-hero-plan .plandl-view { margin: 0; }
+.pd-hero-plan .plandl-view-canvas { max-height: min(68svh, 640px); }
+.pd-hero-plan .plandl-view-canvas svg,
+.pd-hero-plan .plandl-view-canvas img { max-height: min(68svh, 640px); width: 100%; object-fit: contain; }
+
+/* Statement: the rest of what the compiler does, set at reading size. */
+.pd-statement {
+  padding-top: var(--space-xl);
+}
+.pd-statement p {
+  max-width: 56ch;
+  padding-top: var(--space-xl);
+  border-top: var(--rule-hair) solid var(--color-rule);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-statement);
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+  color: var(--color-ink);
+}
+
+/* Deliberately small: the head on five tracks, the reason on seven. */
+.pd-small {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--space-2xl);
+  align-items: start;
+  margin-top: var(--section-gap);
+}
+.pd-home h2 {
+  font-size: var(--text-section);
+  color: var(--color-ink);
+  max-width: 12ch;
+}
+.pd-small p {
+  font-size: var(--text-lead);
+  line-height: 1.55;
+  color: var(--color-ink-2);
+  max-width: 52ch;
+  padding-top: var(--space-xs);
+}
+.pd-small strong { display: block; margin-top: var(--space-lg); font-weight: 600; color: var(--color-ink); }
+.pd-home a:not(.pd-key):not(.pd-footer-mark) {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-muted);
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+.pd-home a:not(.pd-key):not(.pd-footer-mark):hover { color: var(--color-ink); text-decoration-color: var(--color-accent); }
+
+/* Heading permalinks: Hextra styles them only inside .content. */
+.pd-home .subheading-anchor {
+  display: inline-block;
+  margin-left: 0.25em;
+  font-size: 0.5em;
+  vertical-align: middle;
+  color: var(--color-muted);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity var(--dur-micro) var(--ease-out);
+}
+.pd-home .subheading-anchor::after { content: "#"; }
+.pd-home h2:hover .subheading-anchor,
+.pd-home .subheading-anchor:focus-visible { opacity: 1; }
+.pd-home .subheading-anchor:active { color: var(--color-accent-deep); }
+
+/* Try PlanDL: the workbench, one paper-2 band edge to edge. */
+.pd-try {
+  margin-top: var(--section-gap-l);
+  padding-block: var(--space-3xl);
+  background: var(--color-paper-2);
+  box-shadow: 0 0 0 100vmax var(--color-paper-2);
+  clip-path: inset(0 -100vmax);
+}
+.pd-try-head { margin-bottom: var(--space-xl); }
+.pd-try-head p { margin-top: var(--space-md); max-width: 52ch; font-size: var(--text-lead); line-height: 1.5; color: var(--color-ink-2); }
+
+/* ---------- Under 60rem: everything stacks to its content's height ---------- */
+
+@media (max-width: 60rem) {
+  .pd-hero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: var(--space-xl);
+    padding-block: var(--space-xl) 0;
+  }
+  .pd-statement { padding-top: 0; }
+  .pd-small { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); margin-top: var(--section-gap-s); }
+  .pd-try { margin-top: var(--section-gap); padding-block: var(--space-2xl); }
+  .pd-home > section { padding-inline: var(--space-md); }
+}
+
+@media (max-width: 40rem) {
+  .pd-actions { flex-direction: column; align-items: stretch; }
+  .pd-footer-mark { font-size: var(--text-2xl); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-key, .pd-key:hover, .pd-key:active { transition: none; transform: none; }
+}
+
+/* ---------- Examples index: a ruled ledger, each row led by its own compiled plan ---------- */
+
+.content .pd-examples {
+  margin: var(--space-xl) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--rule-hair) solid var(--color-rule);
+}
+.content .pd-example {
+  display: grid;
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  grid-template-areas: "plate title" "plate text";
+  grid-template-rows: auto 1fr;
+  column-gap: var(--space-xl);
+  row-gap: var(--space-xs);
+  max-width: none;
+  margin: 0;
+  padding-block: var(--space-lg);
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.content a.pd-example-plate {
+  grid-area: plate;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background: var(--color-plate);
+  transition: border-color var(--dur-micro) var(--ease-out);
+}
+.pd-example-plate img { width: 100%; height: 100%; object-fit: contain; }
+.content a.pd-example-title {
+  grid-area: title;
+  justify-self: start;
+  align-self: end;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-title);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--dur-micro) var(--ease-out);
+}
+.content .pd-example-text { grid-area: text; margin: 0; color: var(--color-ink-2); max-width: 52ch; }
+.content .pd-example:hover a.pd-example-title { text-decoration-color: var(--color-accent); }
+.content .pd-example:hover a.pd-example-plate { border-color: var(--color-accent); }
+.content a.pd-example-title:active { color: var(--color-accent-deep); }
+
+@media (max-width: 40rem) {
+  .content .pd-example { grid-template-columns: minmax(0, 1fr); grid-template-areas: "plate" "title" "text"; }
+  .content a.pd-example-plate { max-width: 20rem; }
+}
+
+/* The front page keeps Hextra's sidebar for the mobile menu; on wide screens it takes no room. */
+.pd-home-shell { display: flex; }
+.pd-home-shell > .pd-home { flex: 1; min-width: 0; }

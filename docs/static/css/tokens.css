@@ -1,0 +1,65 @@
+:root {
+  color-scheme: light;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.8125rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.25rem; --text-xl: 1.5625rem; --text-2xl: 1.953rem; --text-3xl: 2.441rem;
+  --text-display-s: clamp(2.25rem, 4vw + 0.5rem, 3.75rem); --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --text-section: clamp(2rem, 2.5vw + 1rem, 3.5rem); --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --color-error: oklch(52% 0.19 27); --color-success: oklch(50% 0.12 150);
+  --container: 80rem; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 120px; --section-gap: 144px; --section-gap-l: 176px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+  --color-paper: oklch(98.6% 0.005 250); --color-paper-2: oklch(96.2% 0.008 252); --color-paper-3: oklch(93% 0.011 252);
+  --color-ink: oklch(21% 0.028 262); --color-ink-2: oklch(36% 0.022 260); --color-muted: oklch(50% 0.018 258);
+  --color-rule: oklch(90% 0.009 252); --color-rule-2: oklch(83% 0.012 252);
+  --color-graphite: oklch(21% 0.024 262); --color-graphite-2: oklch(26.5% 0.026 262); --color-graphite-ink: oklch(93% 0.010 250); --color-graphite-muted: oklch(69% 0.022 256);
+  --color-accent: oklch(52% 0.19 258); --color-accent-2: oklch(76% 0.13 254); --color-accent-wash: oklch(95% 0.028 256); --color-accent-ink: oklch(98.6% 0.005 250); --color-focus: oklch(52% 0.19 258);
+  --color-accent-deep: oklch(43% 0.2 262); --color-accent-edge: oklch(39% 0.16 260);
+  --color-glyph-1: oklch(89% 0.025 254); --color-glyph-2: oklch(81% 0.045 255); --color-glyph-3: oklch(70% 0.085 256); --color-glyph-4: oklch(60% 0.13 257);
+  --color-graphite-glyph-1: oklch(33% 0.03 262); --color-graphite-glyph-2: oklch(41% 0.05 260); --color-graphite-glyph-3: oklch(53% 0.1 258);
+  --color-key-face: oklch(99.4% 0.003 250); --color-key-edge: oklch(80% 0.016 254);
+  --font-display: "Familjen Grotesk", system-ui, sans-serif; --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-outlier: "JetBrains Mono", ui-monospace, monospace;
+  --radius-card: 8px; --radius-input: 6px; --radius-pill: 999px;
+  --cell-w: 8px; --cell-h: 16px; --cut: 8px; --cut-l: 16px;
+  --rule-hair: 1px; --shadow-card: 0 1px 2px oklch(21% 0.028 262 / 0.06);
+  --shadow-key: 0 3px 0 0 var(--color-key-edge), 0 6px 8px -4px oklch(21% 0.028 262 / 0.28), inset 0 1px 0 oklch(100% 0 0 / 0.9);
+  --shadow-key-accent: 0 3px 0 0 var(--color-accent-edge), 0 6px 8px -4px oklch(30% 0.12 260 / 0.45), inset 0 1px 0 oklch(100% 0 0 / 0.22);
+  --shadow-key-press: inset 0 1px 2px oklch(21% 0.028 262 / 0.14);
+  --tracking-display: -0.028em; --display-weight: 600;
+}
+:root {
+  /* PlanDL additions: the plan plate, code diffs on graphite, and Hextra's own scales mapped onto the Cobalt neutrals. */
+  --color-plate: oklch(100% 0 0);
+  --color-diff-add: oklch(82% 0.11 150); --color-diff-add-wash: oklch(30% 0.05 150); --color-diff-del: oklch(78% 0.1 25); --color-diff-del-wash: oklch(29% 0.05 25);
+  --color-warning: oklch(52% 0.13 65);
+  --color-editor-edge: oklch(21% 0.024 262);
+  --content-measure: 68ch; --site-width: 80rem;
+  --text-hero: clamp(2.75rem, 3.6vw + 1rem, 4.25rem);
+  --text-statement: clamp(1.375rem, 1vw + 1rem, 2rem);
+  --text-doc-title: clamp(2.25rem, 2vw + 1.25rem, 3rem); --text-doc-h2: clamp(1.625rem, 0.8vw + 1.25rem, 2rem); --text-doc-h3: 1.3125rem;
+  --primary-hue: 223deg; --primary-saturation: 68%; --primary-lightness: 51%;
+  --color-white: oklch(98.6% 0.005 250); --color-dark: oklch(16.5% 0.014 260);
+  --color-gray-50: oklch(98.4% 0.005 250); --color-gray-100: oklch(96.2% 0.008 252); --color-gray-200: oklch(91.5% 0.01 252); --color-gray-300: oklch(85% 0.012 252); --color-gray-400: oklch(70% 0.016 256); --color-gray-500: oklch(52% 0.018 258); --color-gray-600: oklch(44% 0.02 260); --color-gray-700: oklch(36% 0.022 260); --color-gray-800: oklch(26.5% 0.024 262); --color-gray-900: oklch(21% 0.028 262); --color-gray-950: oklch(15% 0.02 262);
+  --color-neutral-50: oklch(98.4% 0.005 250); --color-neutral-100: oklch(96.2% 0.008 252); --color-neutral-200: oklch(91.5% 0.01 252); --color-neutral-300: oklch(85% 0.012 252); --color-neutral-400: oklch(70% 0.016 256); --color-neutral-500: oklch(58% 0.018 258); --color-neutral-600: oklch(44% 0.02 260); --color-neutral-700: oklch(33% 0.02 260); --color-neutral-800: oklch(26.5% 0.02 262); --color-neutral-900: oklch(20% 0.02 262); --color-neutral-950: oklch(15% 0.016 262);
+  --color-slate-100: oklch(94% 0.01 250); --color-slate-900: oklch(21% 0.028 262);
+  --font-sans: var(--font-body); --font-mono: var(--font-outlier);
+}
+/* Dark: Hextra puts .dark on <html> (light, dark or the system setting). Re-derived, never inverted; the hue holds. */
+html.dark {
+  color-scheme: dark;
+  --color-paper: oklch(16.5% 0.014 260); --color-paper-2: oklch(19.5% 0.016 260); --color-paper-3: oklch(23% 0.018 260);
+  --color-ink: oklch(94.5% 0.008 250); --color-ink-2: oklch(84% 0.012 252); --color-muted: oklch(71% 0.016 255);
+  --color-rule: oklch(28% 0.018 260); --color-rule-2: oklch(36% 0.02 258);
+  --color-graphite: oklch(21.5% 0.02 262); --color-graphite-2: oklch(26% 0.024 262); --color-graphite-ink: oklch(92% 0.01 250); --color-graphite-muted: oklch(70% 0.02 256);
+  --color-accent: oklch(68% 0.15 258); --color-accent-2: oklch(79% 0.11 254); --color-accent-wash: oklch(26% 0.05 258); --color-accent-ink: oklch(16% 0.02 262); --color-focus: oklch(72% 0.14 258);
+  --color-accent-deep: oklch(78% 0.11 256); --color-accent-edge: oklch(48% 0.14 260);
+  --color-key-face: oklch(24% 0.018 260); --color-key-edge: oklch(11% 0.012 260);
+  --color-editor-edge: oklch(54% 0.02 258);
+  --color-error: oklch(72% 0.14 27); --color-success: oklch(76% 0.12 150); --color-warning: oklch(80% 0.12 70);
+  --shadow-card: inset 0 0 0 1px var(--color-rule);
+  --shadow-key: 0 3px 0 0 var(--color-key-edge), inset 0 1px 0 oklch(100% 0 0 / 0.06);
+  --shadow-key-accent: 0 3px 0 0 var(--color-accent-edge), inset 0 1px 0 oklch(100% 0 0 / 0.2);
+  --shadow-key-press: inset 0 1px 2px oklch(0% 0 0 / 0.4);
+  --primary-hue: 220deg; --primary-saturation: 85%; --primary-lightness: 66%;
+}

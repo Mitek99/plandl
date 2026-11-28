@@ -1,0 +1,14 @@
+{{- /*
+  One row of the examples index: the example's plan (the build-time SVG) beside its title and description.
+  Usage: {{< plandl-example href="open-plan/" plan="open-plan" title="Open plan" >}}Description.{{< /plandl-example >}}
+  The plan is a path under static/examples, without .svg. The plate repeats the title link for the pointer only.
+*/ -}}
+{{- $plan := .Get "plan" -}}
+{{- if not (fileExists (printf "static/examples/%s.svg" $plan)) -}}
+  {{- errorf "plandl-example: static/examples/%s.svg was not generated; run npm run site:generate" $plan -}}
+{{- end -}}
+<li class="pd-example">
+  <a class="pd-example-plate" href="{{ .Get "href" }}" tabindex="-1" aria-hidden="true"><img src="{{ printf "examples/%s.svg" $plan | relURL }}" alt="" loading="lazy" width="320" height="240"></a>
+  <a class="pd-example-title" href="{{ .Get "href" }}">{{ .Get "title" }}</a>
+  <p class="pd-example-text">{{ .Inner | strings.TrimSpace }}</p>
+</li>

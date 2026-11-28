@@ -1,0 +1,10 @@
+{{- /* The front page: content/_index.md composed full width, without the docs title or table of contents.
+       The sidebar partial stays (hidden on desktop) because Hextra's mobile menu opens it. */ -}}
+{{ define "main" }}
+  <div class="pd-home-shell">
+    {{ partial "sidebar.html" (dict "context" . "disableSidebar" true "displayPlaceholder" false) }}
+    <main id="content" class="pd-home">
+      {{ .Content }}
+    </main>
+  </div>
+{{ end }}
