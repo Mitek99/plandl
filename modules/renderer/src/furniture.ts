@@ -52,22 +52,39 @@ function sofa(width: number, height: number): string {
   return shapes.join("");
 }
 
-function chairSymbol(x: number, y: number, width: number, height: number): string {
-  return [
-    rect(x, y, width, height, OUTLINE, Math.min(width, height) * 0.08),
-    line(x, y + height * 0.2, x + width, y + height * 0.2),
-    line(x + width * 0.15, y + height * 0.85, x + width * 0.85, y + height * 0.85)
-  ].join("");
+/** Real chair size in millimetres, and how far a chair tucks under the tabletop. */
+const CHAIR = 450;
+const CHAIR_TUCK = 100;
+
+/** A chair with its backrest on the side away from the table. (x, y) is its top-left corner. */
+function chairSymbol(x: number, y: number, back: "top" | "bottom" | "left" | "right"): string {
+  const shapes = [rect(x, y, CHAIR, CHAIR, OUTLINE, CHAIR * 0.12)];
+  const inset = CHAIR * 0.16;
+  if (back === "top") shapes.push(line(x + inset, y + inset, x + CHAIR - inset, y + inset));
+  if (back === "bottom") shapes.push(line(x + inset, y + CHAIR - inset, x + CHAIR - inset, y + CHAIR - inset));
+  if (back === "left") shapes.push(line(x + inset, y + inset, x + inset, y + CHAIR - inset));
+  if (back === "right") shapes.push(line(x + CHAIR - inset, y + inset, x + CHAIR - inset, y + CHAIR - inset));
+  return shapes.join("");
 }
 
-function table(width: number, height: number): string {
-  const shapes = [rect(width * 0.2, height * 0.2, width * 0.6, height * 0.6, FILLED_DETAIL)];
-  for (const x of [width * 0.34, width * 0.56]) {
-    shapes.push(chairSymbol(x, 0, width * 0.14, height * 0.18));
-    shapes.push(chairSymbol(x, height * 0.82, width * 0.14, height * 0.18));
+/**
+ * WIDTH x DEPTH is the tabletop. Chairs keep their real size and sit around it, tucked slightly under:
+ * one per 650mm along each long side, and one at each end when the table is at least 700mm deep.
+ */
+function table(width: number, depth: number): string {
+  const shapes: string[] = [];
+  const perSide = Math.max(1, Math.floor(width / 650));
+  for (let index = 0; index < perSide; index += 1) {
+    const x = width * (index + 0.5) / perSide - CHAIR / 2;
+    shapes.push(chairSymbol(x, -CHAIR + CHAIR_TUCK, "top"));
+    shapes.push(chairSymbol(x, depth - CHAIR_TUCK, "bottom"));
   }
-  shapes.push(chairSymbol(0, height * 0.38, width * 0.18, height * 0.24));
-  shapes.push(chairSymbol(width * 0.82, height * 0.38, width * 0.18, height * 0.24));
+  if (depth >= 700) {
+    shapes.push(chairSymbol(-CHAIR + CHAIR_TUCK, depth / 2 - CHAIR / 2, "left"));
+    shapes.push(chairSymbol(width - CHAIR_TUCK, depth / 2 - CHAIR / 2, "right"));
+  }
+  // The tabletop is drawn last so the tucked part of each chair is hidden under it.
+  shapes.push(rect(0, 0, width, depth, FILLED_DETAIL, Math.min(width, depth) * 0.03));
   return shapes.join("");
 }
 

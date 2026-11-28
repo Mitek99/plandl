@@ -30,7 +30,7 @@ Each furniture command has a standard depth, used when `DEPTH` is omitted. `plan
 | `FRIDGE` | 700mm | 600–700mm |
 | `OVEN` | 600mm | 600mm |
 | `SOFA` | 900mm | 1800–2600mm |
-| `TABLE` | 900mm | 1200–1800mm (with chairs, DEPTH 900–1000mm) |
+| `TABLE` | 900mm | 1200–1800mm; `WIDTH` × `DEPTH` is the tabletop, and chairs are drawn around it, so keep about 600mm clear on each side |
 | `ISLAND` | 900mm | 1200–2000mm |
 | `TOILET` | 700mm | 400–600mm |
 | `SHOWER` | 900mm | 800–1000mm |

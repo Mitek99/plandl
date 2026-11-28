@@ -46,7 +46,7 @@ export const FURNITURE_TYPICAL_WIDTHS: Readonly<Record<FurnitureType, string>> =
   FRIDGE: "600-700mm",
   OVEN: "600mm",
   SOFA: "1800-2600mm",
-  TABLE: "1200-1800mm (with chairs: DEPTH 900-1000mm)",
+  TABLE: "1200-1800mm; WIDTH x DEPTH is the tabletop, chairs are drawn around it, so keep about 600mm clear on each side",
   ISLAND: "1200-2000mm",
   TOILET: "400-600mm",
   SHOWER: "800-1000mm",
