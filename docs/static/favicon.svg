@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>PlanDL</title>
+  <rect width="64" height="64" rx="14" fill="#0462d3"/>
+  <g fill="none" stroke="#f8fbfe" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M38 50H50V14H14V50H27" stroke-width="5.5"/>
+    <path d="M14 33H26M34 33H50M32 14V33" stroke-width="4"/>
+  </g>
+</svg>
