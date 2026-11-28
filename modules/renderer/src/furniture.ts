@@ -88,6 +88,15 @@ function table(width: number, depth: number): string {
   return shapes.join("");
 }
 
+/** WIDTH x DEPTH is the desktop; one real-size chair sits in front of it, tucked slightly under. */
+function desk(width: number, depth: number): string {
+  return [
+    chairSymbol(width / 2 - CHAIR / 2, depth - CHAIR_TUCK, "bottom"),
+    rect(0, 0, width, depth, FILLED_DETAIL, Math.min(width, depth) * 0.03),
+    line(width * 0.1, depth * 0.25, width * 0.9, depth * 0.25)
+  ].join("");
+}
+
 function sink(width: number, height: number): string {
   return [
     rect(0, 0, width, height, OUTLINE, Math.min(width, height) * 0.05),
@@ -195,7 +204,7 @@ function symbol(furniture: ResolvedFurniture): string {
     case "DISHWASHER": return dishwasher(width, depth);
     case "OVEN": return oven(width, depth);
     case "SHOWER": return shower(width, depth);
-    case "DESK": return [rect(0, 0, width, depth), line(width * 0.1, depth * 0.25, width * 0.9, depth * 0.25)].join("");
+    case "DESK": return desk(width, depth);
     case "ISLAND": return [rect(0, 0, width, depth, FILLED_DETAIL), rect(width * 0.08, depth * 0.08, width * 0.84, depth * 0.84)].join("");
   }
 }

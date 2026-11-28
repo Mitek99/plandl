@@ -48,8 +48,9 @@ export const MINIMUM_SIZES: Readonly<Partial<Record<RoomType, { area: number; wi
   UTILITY: { area: 1.5e6, width: 1000 }
 };
 
-/** How far the chairs drawn around a TABLE reach beyond its tabletop, in millimetres. */
-export const TABLE_CHAIR_REACH = 350;
+/** How far the chairs drawn at a TABLE or DESK reach beyond its top, and a chair's width, in millimetres. */
+export const CHAIR_REACH = 350;
+export const CHAIR_SIZE = 450;
 
 /** Circulation above this share of the net area is reported. Typical dwellings use 10-15%. */
 export const CIRCULATION_LIMIT = 0.2;
@@ -642,15 +643,29 @@ export function analyzePlan(plan: ResolvedPlan, document: PlanDocument): void {
     swings.push(swingFor(plan, opening, hostsOf(opening), into));
   }
   const describeFurniture = (item: ResolvedFurniture): string =>
-    `${item.type}${item.type === "TABLE" ? " with its chairs" : ""} on ${item.wall} (OFFSET ${mm(item.offset)}, WIDTH ${mm(item.width)})`;
-  // A TABLE's WIDTH x DEPTH is the tabletop; the renderer draws chairs reaching TABLE_CHAIR_REACH beyond it.
-  const occupied = (item: ResolvedFurniture): Point[] => {
-    if (item.type !== "TABLE") return item.footprint;
-    const xs = item.footprint.map((point) => point.x);
-    const ys = item.footprint.map((point) => point.y);
-    const [minX, maxX, minY, maxY] = [Math.min(...xs) - TABLE_CHAIR_REACH, Math.max(...xs) + TABLE_CHAIR_REACH, Math.min(...ys) - TABLE_CHAIR_REACH, Math.max(...ys) + TABLE_CHAIR_REACH];
-    return [{ x: minX, y: minY }, { x: maxX, y: minY }, { x: maxX, y: maxY }, { x: minX, y: maxY }];
+    `${item.type}${item.type === "TABLE" ? " with its chairs" : item.type === "DESK" ? " with its chair" : ""} on ${item.wall} (OFFSET ${mm(item.offset)}, WIDTH ${mm(item.width)})`;
+  // A TABLE's or DESK's WIDTH x DEPTH is its top. The renderer draws real-size chairs beyond it: all round a
+  // table (CHAIR_REACH on every side), and one 450mm chair centred in front of a desk. Checks count the chairs.
+  const occupied = (item: ResolvedFurniture): Point[][] => {
+    if (item.type === "TABLE") {
+      const xs = item.footprint.map((point) => point.x);
+      const ys = item.footprint.map((point) => point.y);
+      const [minX, maxX, minY, maxY] = [Math.min(...xs) - CHAIR_REACH, Math.max(...xs) + CHAIR_REACH, Math.min(...ys) - CHAIR_REACH, Math.max(...ys) + CHAIR_REACH];
+      return [[{ x: minX, y: minY }, { x: maxX, y: minY }, { x: maxX, y: maxY }, { x: minX, y: maxY }]];
+    }
+    if (item.type === "DESK") {
+      const [origin, alongEnd, , inwardEnd] = item.footprint as [Point, Point, Point, Point];
+      const along = { x: (alongEnd.x - origin.x) / item.width, y: (alongEnd.y - origin.y) / item.width };
+      const inward = { x: (inwardEnd.x - origin.x) / item.depth, y: (inwardEnd.y - origin.y) / item.depth };
+      const at = (a: number, d: number): Point => ({ x: origin.x + along.x * a + inward.x * d, y: origin.y + along.y * a + inward.y * d });
+      const left = item.width / 2 - CHAIR_SIZE / 2;
+      const right = item.width / 2 + CHAIR_SIZE / 2;
+      const chair = [at(left, item.depth), at(right, item.depth), at(right, item.depth + CHAIR_REACH), at(left, item.depth + CHAIR_REACH)];
+      return [item.footprint, chair];
+    }
+    return [item.footprint];
   };
+  const overlapOf = (a: Point[][], b: Point[][]): number => a.reduce((sum, first) => sum + b.reduce((inner, second) => inner + overlapArea(first, second), 0), 0);
   const describeDoor = (opening: ResolvedOpening): string =>
     `the door on ${opening.wall} (OFFSET ${mm(opening.offset)}-${mm(opening.offset + opening.width)})`;
 
@@ -658,7 +673,7 @@ export function analyzePlan(plan: ResolvedPlan, document: PlanDocument): void {
     for (let second = first + 1; second < plan.furniture.length; second += 1) {
       const a = plan.furniture[first]!;
       const b = plan.furniture[second]!;
-      const area = overlapArea(occupied(a), occupied(b));
+      const area = overlapOf(occupied(a), occupied(b));
       if (area > OVERLAP_TOLERANCE) {
         warn(plan, "FURNITURE_OVERLAP", `${describeFurniture(b)} overlaps ${describeFurniture(a)} by ${sqm(area)}.`, b.location);
       }
@@ -666,7 +681,7 @@ export function analyzePlan(plan: ResolvedPlan, document: PlanDocument): void {
   }
   for (const swing of swings) {
     for (const item of plan.furniture) {
-      const area = overlapArea(occupied(item), swing.area);
+      const area = overlapOf(occupied(item), [swing.area]);
       if (area > OVERLAP_TOLERANCE) {
         const sameWall = item.wall === swing.opening.wall;
         const hint = sameWall
