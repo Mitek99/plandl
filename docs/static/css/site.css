@@ -32,6 +32,9 @@ html :is([class*="hx:bg-white"], [class*="hx:dark:bg-dark"]):not(.hextra-nav-con
 html [class*="hx:shadow-[0_-12px_16px"] { box-shadow: 0 -12px 16px var(--color-paper); }
 
 .hextra-nav-container nav { gap: var(--space-lg); }
+.pd-wordmark { gap: var(--space-xs); text-decoration: none; }
+.pd-wordmark-mark { display: block; flex: none; border-radius: 6px; }
+.pd-wordmark:hover .pd-wordmark-mark { opacity: 0.85; }
 .hextra-nav-container nav > a:first-child span {
   font-family: var(--font-display);
   font-weight: 600;

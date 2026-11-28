@@ -30,7 +30,11 @@ params:
     enable: false
   navbar:
     displayTitle: true
-    displayLogo: false
+    displayLogo: true
+    logo:
+      path: favicon.svg
+      width: 24
+      height: 24
   footer:
     displayCopyright: false
     displayPoweredBy: false

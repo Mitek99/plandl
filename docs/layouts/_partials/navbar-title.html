@@ -1,0 +1,14 @@
+{{- /* The header wordmark: the PlanDL mark (the favicon) beside the site title.
+       Overrides Hextra's partial: one image for both modes, decorative because the title names the link. */ -}}
+{{- $logo := site.Params.navbar.logo -}}
+{{- $logoPath := $logo.path | default "favicon.svg" -}}
+{{- $logoWidth := $logo.width | default 24 -}}
+{{- $logoHeight := $logo.height | default 24 -}}
+<a class="pd-wordmark hx:flex hx:items-center hx:ltr:mr-auto hx:rtl:ml-auto" href="{{ site.Params.navbar.logo.link | default site.Home.RelPermalink }}">
+  {{- if site.Params.navbar.displayLogo | default true }}
+    <img class="pd-wordmark-mark" src="{{ $logoPath | relURL }}" alt="" width="{{ $logoWidth }}" height="{{ $logoHeight }}" />
+  {{- end }}
+  {{- if site.Params.navbar.displayTitle | default true }}
+    <span class="hx:select-none">{{- site.Title -}}</span>
+  {{- end }}
+</a>
