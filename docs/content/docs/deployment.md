@@ -17,12 +17,23 @@ S3 and CloudFront usage can incur AWS charges.
 
 ## Publish
 
-With Node.js, Hugo Extended, and AWS credentials configured:
+With Node.js and Hugo Extended installed:
 
 ```sh
 npm run site:deploy:aws
 ```
 
-The command builds with the CloudFront base URL, validates and regenerates the examples, synchronizes `docs/public/` to S3, removes stale objects, and creates a `/*` CloudFront invalidation.
+The command first confirms the AWS credentials work, then builds with the `plandl.org` base URL, validates and regenerates the examples, synchronizes `docs/public/` to S3, removes stale objects, and creates a `/*` CloudFront invalidation.
 
-The defaults can be overridden with `PLANDL_AWS_BUCKET`, `PLANDL_AWS_DISTRIBUTION`, `PLANDL_AWS_DOMAIN`, and `AWS_REGION`.
+Deploys run as the `app-deployer` IAM user, from the `app-deployer` profile in `~/.aws/credentials`, so an expired personal sign-in does not get in the way. To use another profile, set `PLANDL_AWS_PROFILE` (or `AWS_PROFILE`). The deploy needs exactly these permissions:
+
+| Service | Actions | Resource |
+|---|---|---|
+| S3 | `s3:ListBucket` | the bucket |
+| S3 | `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` | objects in the bucket |
+| CloudFront | `cloudfront:CreateInvalidation`, `cloudfront:GetInvalidation`, `cloudfront:ListInvalidations`, `cloudfront:GetDistribution` | the distribution |
+| STS | `sts:GetCallerIdentity` | (always allowed) |
+
+`app-deployer` has all of them. One-time changes, such as adding a domain to CloudFront or requesting a certificate, need an administrator sign-in instead.
+
+The other defaults can be overridden with `PLANDL_AWS_BUCKET`, `PLANDL_AWS_DISTRIBUTION`, `PLANDL_AWS_DOMAIN`, and `PLANDL_AWS_REGION`.
