@@ -14,6 +14,6 @@ PlanDL is a small, strict, LLM-friendly language for floor plans. Rooms select g
 
 ## Try PlanDL
 
-Edit the schematic [FH-114M reference-house conversion](examples/reference-house/) and watch the real parser, validator, and SVG renderer update the plan in your browser.
+Edit the [reference house](examples/reference-house/) and watch the real parser, validator, and SVG renderer update the plan in your browser.
 
 {{< plandl-playground >}}
