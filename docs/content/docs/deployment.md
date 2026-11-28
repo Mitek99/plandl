@@ -44,6 +44,15 @@ Deploys run as the `app-deployer` IAM user, from the `app-deployer` profile in `
 | CloudFront | `cloudfront:CreateInvalidation`, `cloudfront:GetInvalidation`, `cloudfront:ListInvalidations`, `cloudfront:GetDistribution` | the distribution |
 | STS | `sts:GetCallerIdentity` | (always allowed) |
 
-`app-deployer` has all of them. One-time changes, such as adding a domain to CloudFront or requesting a certificate, need an administrator sign-in instead.
+The inline policy `PlanDLDeployment` on `app-deployer` grants them, and also lets it maintain the edge setup:
+
+| Service | Actions | Resource |
+|---|---|---|
+| CloudFront | `cloudfront:DescribeFunction`, `cloudfront:GetFunction`, `cloudfront:TestFunction`, `cloudfront:UpdateFunction`, `cloudfront:PublishFunction` | the `plandl-directory-index` function |
+| CloudFront | `cloudfront:GetDistribution`, `cloudfront:GetDistributionConfig` | the distribution |
+| CloudFront | `cloudfront:GetResponseHeadersPolicy`, `cloudfront:GetCachePolicy` | response headers and cache policies |
+| CloudFront | `cloudfront:ListFunctions`, `cloudfront:ListDistributions`, `cloudfront:ListResponseHeadersPolicies`, `cloudfront:ListCachePolicies` | `*` (list actions take no resource) |
+
+One-time changes, such as adding a domain to CloudFront, attaching a policy to the distribution, or requesting a certificate, need an administrator sign-in instead.
 
 The other defaults can be overridden with `PLANDL_AWS_BUCKET`, `PLANDL_AWS_DISTRIBUTION`, `PLANDL_AWS_DOMAIN`, and `PLANDL_AWS_REGION`.

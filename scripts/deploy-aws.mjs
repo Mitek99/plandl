@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { readdirSync, utimesSync } from "node:fs";
+import { join } from "node:path";
 
 const bucket = process.env.PLANDL_AWS_BUCKET ?? "plandl-pages-164620743841-us-west-2";
 const distribution = process.env.PLANDL_AWS_DISTRIBUTION ?? "EKCEZ0KPAOBOP";
@@ -25,21 +27,27 @@ try {
 console.log(`Deploying to https://${domain}/ as ${identity} (profile ${profile}).`);
 
 execFileSync("npm", ["run", "site:build"], { stdio: "inherit", env: environment });
+// Hugo keeps the modification times of static files, so s3 sync would skip unchanged ones and leave them with
+// whatever metadata they were first uploaded with. Touching every file uploads the whole site (under 2 MB)
+// on each deploy, so every object gets the Cache-Control header below.
+const now = new Date();
+for (const entry of readdirSync("docs/public", { recursive: true, withFileTypes: true })) {
+  if (entry.isFile()) utimesSync(join(entry.parentPath, entry.name), now, now);
+}
 // Upload in three passes so every object carries a Cache-Control header (CloudFront and browsers honour it):
 // 1. Hugo's fingerprinted bundles change name when their content changes, so they can be cached for a year.
 // 2. Pages and other documents whose URL never changes are revalidated after five minutes.
-// 3. Everything else (unfingerprinted CSS and scripts, plan drawings, icons) is cached for an hour. This pass
-//    also deletes objects that are no longer built; files uploaded by the first two passes are newer in S3
-//    than on disk, so it skips them.
+// 3. Everything else (unfingerprinted CSS and scripts, plan drawings, icons) is cached for an hour.
+// A last pass deletes objects that are no longer built. It compares sizes only, so it uploads nothing.
 const sync = (...args) =>
   execFileSync("aws", ["s3", "sync", "docs/public", `s3://${bucket}`, ...args], { stdio: "inherit", env: environment });
-sync("--exclude", "*", "--include", "css/compiled/*", "--include", "js/*.min.*", "--cache-control", "public, max-age=31536000, immutable");
-sync(
-  "--exclude", "*",
-  ...["*.html", "*.xml", "*.txt", "*.json", "*.webmanifest"].flatMap((pattern) => ["--include", pattern]),
-  "--cache-control", "public, max-age=300"
-);
-sync("--delete", "--cache-control", "public, max-age=3600");
+const immutable = ["css/compiled/*", "js/*.min.*"];
+const documents = ["*.html", "*.xml", "*.txt", "*.json", "*.webmanifest"];
+const flags = (flag, patterns) => patterns.flatMap((pattern) => [flag, pattern]);
+sync("--exclude", "*", ...flags("--include", immutable), "--cache-control", "public, max-age=31536000, immutable");
+sync("--exclude", "*", ...flags("--include", documents), "--cache-control", "public, max-age=300");
+sync(...flags("--exclude", [...immutable, ...documents]), "--cache-control", "public, max-age=3600");
+sync("--delete", "--size-only");
 const invalidation = execFileSync(
   "aws",
   ["cloudfront", "create-invalidation", "--distribution-id", distribution, "--paths", "/*", "--query", "Invalidation.Id", "--output", "text"],
