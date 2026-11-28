@@ -25,7 +25,21 @@ try {
 console.log(`Deploying to https://${domain}/ as ${identity} (profile ${profile}).`);
 
 execFileSync("npm", ["run", "site:build"], { stdio: "inherit", env: environment });
-execFileSync("aws", ["s3", "sync", "docs/public", `s3://${bucket}`, "--delete"], { stdio: "inherit", env: environment });
+// Upload in three passes so every object carries a Cache-Control header (CloudFront and browsers honour it):
+// 1. Hugo's fingerprinted bundles change name when their content changes, so they can be cached for a year.
+// 2. Pages and other documents whose URL never changes are revalidated after five minutes.
+// 3. Everything else (unfingerprinted CSS and scripts, plan drawings, icons) is cached for an hour. This pass
+//    also deletes objects that are no longer built; files uploaded by the first two passes are newer in S3
+//    than on disk, so it skips them.
+const sync = (...args) =>
+  execFileSync("aws", ["s3", "sync", "docs/public", `s3://${bucket}`, ...args], { stdio: "inherit", env: environment });
+sync("--exclude", "*", "--include", "css/compiled/*", "--include", "js/*.min.*", "--cache-control", "public, max-age=31536000, immutable");
+sync(
+  "--exclude", "*",
+  ...["*.html", "*.xml", "*.txt", "*.json", "*.webmanifest"].flatMap((pattern) => ["--include", pattern]),
+  "--cache-control", "public, max-age=300"
+);
+sync("--delete", "--cache-control", "public, max-age=3600");
 const invalidation = execFileSync(
   "aws",
   ["cloudfront", "create-invalidation", "--distribution-id", distribution, "--paths", "/*", "--query", "Invalidation.Id", "--output", "text"],

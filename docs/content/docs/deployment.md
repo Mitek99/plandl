@@ -12,7 +12,8 @@ The production documentation is available at [https://plandl.org/](https://pland
 - CloudFront distribution `EKCEZ0KPAOBOP` with HTTPS redirect and a managed caching policy. It serves `plandl.org` and `www.plandl.org` with an ACM certificate from `us-east-1`; its default domain is `d3eb034fkslao0.cloudfront.net`.
 - DNS for `plandl.org` is hosted at Porkbun: an `ALIAS` record for the root domain and a `CNAME` for `www`, both pointing to the CloudFront domain, plus the ACM validation `CNAME` records.
 - Origin access control allows only this distribution to read the bucket.
-- CloudFront Function `plandl-directory-index` maps directory URLs to Hugo's `index.html` documents.
+- CloudFront Function `plandl-directory-index` (viewer request) redirects `www.plandl.org` to `plandl.org` with a 301, keeping the path and query, and maps directory URLs to Hugo's `index.html` documents.
+- The managed `SecurityHeadersPolicy` response headers policy adds `Strict-Transport-Security` (one year), `X-Content-Type-Options`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy`, and `X-XSS-Protection` to every response.
 
 S3 and CloudFront usage can incur AWS charges.
 
@@ -25,6 +26,14 @@ npm run site:deploy:aws
 ```
 
 The command first confirms the AWS credentials work, then builds with the `plandl.org` base URL, validates and regenerates the examples, synchronizes `docs/public/` to S3, removes stale objects, and creates a `/*` CloudFront invalidation.
+
+Each object is uploaded with a `Cache-Control` header, which CloudFront and browsers honour:
+
+| Files | Cache-Control |
+|---|---|
+| Hugo's fingerprinted bundles (`css/compiled/*`, `js/*.min.*`) | `public, max-age=31536000, immutable` |
+| Pages and documents (`.html`, `.xml`, `.txt`, `.json`, `.webmanifest`) | `public, max-age=300` |
+| Everything else (unfingerprinted CSS and scripts, drawings, icons) | `public, max-age=3600` |
 
 Deploys run as the `app-deployer` IAM user, from the `app-deployer` profile in `~/.aws/credentials`, so an expired personal sign-in does not get in the way. To use another profile, set `PLANDL_AWS_PROFILE` (or `AWS_PROFILE`). The deploy needs exactly these permissions:
 
