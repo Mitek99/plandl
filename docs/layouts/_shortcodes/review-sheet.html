@@ -1,0 +1,27 @@
+{{- /*
+  A plan drawing with its review notes beside it.
+  Params: src, alt, caption (small label above the notes); optional src2, alt2, label, label2 for a before/after pair, which also makes the sheet full width.
+  Inner content is Markdown and may use the pin shortcode.
+*/ -}}
+{{- $page := .Page -}}
+{{- $src := .Get "src" -}}
+{{- $src2 := .Get "src2" -}}
+{{- $img := $page.Resources.Get $src -}}
+{{- if not $img }}{{ errorf "review-sheet: %q is not a resource of %s" $src $page.File.Path }}{{ end -}}
+{{- $draw := "" -}}
+{{- if $src2 -}}
+  {{- $img2 := $page.Resources.Get $src2 -}}
+  {{- if not $img2 }}{{ errorf "review-sheet: %q is not a resource of %s" $src2 $page.File.Path }}{{ end -}}
+  {{- $draw = printf `<div class="review-pair"><figure><img src="%s" alt="%s" loading="lazy"><figcaption>%s</figcaption></figure><figure><img src="%s" alt="%s" loading="lazy"><figcaption>%s</figcaption></figure></div>` $img.RelPermalink (.Get "alt") (.Get "label") $img2.RelPermalink (.Get "alt2") (.Get "label2") -}}
+{{- else -}}
+  {{- $draw = printf `<img src="%s" alt="%s" loading="lazy">` $img.RelPermalink (.Get "alt") -}}
+{{- end -}}
+<div class="review-sheet{{ if $src2 }} wide{{ end }}">
+  {{- if $src2 }}
+  <div class="review-notes"><div class="review-cap">{{ .Get "caption" }}</div>{{ .Inner | $page.RenderString (dict "display" "block") }}</div>
+  <div class="review-draw">{{ $draw | safeHTML }}</div>
+  {{- else }}
+  <div class="review-draw">{{ $draw | safeHTML }}</div>
+  <div class="review-notes"><div class="review-cap">{{ .Get "caption" }}</div>{{ .Inner | $page.RenderString (dict "display" "block") }}</div>
+  {{- end }}
+</div>

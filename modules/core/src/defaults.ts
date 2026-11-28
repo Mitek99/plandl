@@ -40,13 +40,13 @@ export const FURNITURE_DEPTHS: Readonly<Record<FurnitureType, number>> = Object.
 /** Typical widths along the wall, published in the spec so authors do not have to guess. */
 export const FURNITURE_TYPICAL_WIDTHS: Readonly<Record<FurnitureType, string>> = Object.freeze({
   BED: "900mm single, 1400-1800mm double",
-  DESK: "1200-1600mm",
+  DESK: "1200-1600mm; WIDTH x DEPTH is the desktop, a chair is drawn in front of it, so keep about 600mm clear there",
   CABINET: "any; kitchen base units 600mm each",
   SINK: "600-1000mm",
   FRIDGE: "600-700mm",
   OVEN: "600mm",
   SOFA: "1800-2600mm",
-  TABLE: "1200-1800mm (with chairs: DEPTH 900-1000mm)",
+  TABLE: "1200-1800mm; WIDTH x DEPTH is the tabletop, chairs are drawn around it, so keep about 600mm clear on each side",
   ISLAND: "1200-2000mm",
   TOILET: "400-600mm",
   SHOWER: "800-1000mm",

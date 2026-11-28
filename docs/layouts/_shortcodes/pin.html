@@ -1,0 +1,2 @@
+{{- /* A numbered redline marker matching the overlay on review drawings. Usage: {{< pin 3 >}}, {{< pin 3 soft >}}, {{< pin "–" text >}} */ -}}
+<span class="review-pin{{ with .Get 1 }} {{ . }}{{ end }}">{{ .Get 0 }}</span>

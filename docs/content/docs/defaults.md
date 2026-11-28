@@ -24,13 +24,13 @@ Each furniture command has a standard depth, used when `DEPTH` is omitted. `plan
 | Command | Standard depth | Typical width along the wall |
 |---|---:|---|
 | `BED` | 2000mm | 900mm single, 1400–1800mm double |
-| `DESK` | 600mm | 1200–1600mm |
+| `DESK` | 600mm | 1200–1600mm; `WIDTH` × `DEPTH` is the desktop, and a chair is drawn in front of it, so keep about 600mm clear there |
 | `CABINET` | 600mm | any; kitchen base units 600mm each |
 | `SINK` | 600mm | 600–1000mm |
 | `FRIDGE` | 700mm | 600–700mm |
 | `OVEN` | 600mm | 600mm |
 | `SOFA` | 900mm | 1800–2600mm |
-| `TABLE` | 900mm | 1200–1800mm (with chairs, DEPTH 900–1000mm) |
+| `TABLE` | 900mm | 1200–1800mm; `WIDTH` × `DEPTH` is the tabletop, and chairs are drawn around it, so keep about 600mm clear on each side |
 | `ISLAND` | 900mm | 1200–2000mm |
 | `TOILET` | 700mm | 400–600mm |
 | `SHOWER` | 900mm | 800–1000mm |
