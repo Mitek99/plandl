@@ -1,5 +1,7 @@
 ---
 title: Step by step
+seoTitle: "Step by step: build a house in seven checked steps"
+description: "Build a small house in PlanDL in seven validated steps, with the real plandl check output after each one: rooms, doors, windows, and furniture."
 weight: 1
 aliases:
   - /step-by-step/

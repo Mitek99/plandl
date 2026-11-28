@@ -1,5 +1,7 @@
 ---
 title: Introduction
+seoTitle: "Introduction to the PlanDL floor-plan language"
+description: "PlanDL is a line-oriented language for grid-based floor plans that people and LLM agents can write, validate, and repair. The core ideas and how it works."
 weight: 1
 ---
 

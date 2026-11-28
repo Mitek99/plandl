@@ -1,5 +1,7 @@
 ---
 title: Defaults
+seoTitle: "Wall thickness defaults"
+description: "Use DEFAULT to set inner, bearing, and outer wall thicknesses for a whole PlanDL plan: each setting, its built-in value, and what it changes."
 weight: 6
 ---
 

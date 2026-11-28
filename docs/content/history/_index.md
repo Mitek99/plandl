@@ -1,5 +1,7 @@
 ---
 title: History
+seoTitle: "History: versions, reviews, and decisions"
+description: "How PlanDL got its shape: language versions, the agent reviews that tested them, and the design decisions that followed."
 ---
 
 How PlanDL got its shape: the versions, the reviews that tested them, and the decisions that followed. Newest first.

@@ -1,5 +1,7 @@
 ---
 title: Open plan
+seoTitle: "Open plan: living room and kitchen floor plan"
+description: "An open-plan living room and kitchen in PlanDL: a door placed by the compiler, room types, required kitchen fixtures, and values written by plandl infer."
 aliases:
   - /open-plan/
 ---

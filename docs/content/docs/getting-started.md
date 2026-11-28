@@ -1,5 +1,7 @@
 ---
 title: Getting started
+seoTitle: "Getting started: check and render a floor plan"
+description: "Build the PlanDL command-line tools with Node.js and npm, then check, render, and inspect your first floor plan as SVG and normalized JSON."
 weight: 2
 ---
 

@@ -1,5 +1,7 @@
 ---
 title: Checks
+seoTitle: "Checks: unreachable rooms, blocked doors, windows"
+description: "What plandl check reports: errors that reject a floor plan, and warnings for unreachable rooms, blocked doors, and missing windows or fixtures."
 weight: 5
 ---
 

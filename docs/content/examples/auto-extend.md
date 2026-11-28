@@ -1,5 +1,7 @@
 ---
 title: Compound rooms
+seoTitle: "Compound rooms: L-shaped rooms with MERGE"
+description: "Compound rooms in PlanDL: MERGE joins rectangles into one L-shaped space, drops the walls between them, and keeps each member's walls named."
 aliases:
   - /auto-extend/
   - /compound-rooms/

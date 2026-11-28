@@ -1,5 +1,6 @@
 ---
 title: AWS deployment
+description: "How the PlanDL documentation site is built with Hugo and published to Amazon S3 behind CloudFront at plandl.org."
 weight: 8
 ---
 

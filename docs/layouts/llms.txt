@@ -1,0 +1,16 @@
+# {{ site.Title }}
+
+> {{ site.Params.description }}
+
+The complete language in one plain-text file, written for agents to read before writing a plan: [PlanDL specification]({{ "spec.txt" | absURL }}). The same text is printed by `plandl spec`.
+{{ range where site.Sections "Params.llms" "ne" false }}
+## {{ .Title }}
+
+- [{{ .Title }}]({{ .Permalink }}): {{ .Description }}
+{{- range where .RegularPages "Params.llms" "ne" false }}
+- [{{ .Title }}]({{ .Permalink }}): {{ .Description }}
+{{- end }}
+{{ end }}
+## Source
+
+- [GitHub repository](https://github.com/Mitek99/plandl): compiler, CLI, examples, and this documentation.

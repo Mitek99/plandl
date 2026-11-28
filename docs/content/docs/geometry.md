@@ -1,5 +1,6 @@
 ---
 title: Geometry and validation
+description: "How PlanDL resolves grid lines, wall thickness, bearing walls, and the wall-relative placement of doors, windows, and furniture, and the errors it reports."
 weight: 4
 ---
 

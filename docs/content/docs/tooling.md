@@ -1,5 +1,7 @@
 ---
 title: Tooling
+seoTitle: "Tooling: the plandl CLI and npm packages"
+description: "The PlanDL toolchain: npm packages and the plandl CLI commands check, infer, compile, describe, defaults, and spec, with JSON output for agent workflows."
 weight: 7
 ---
 

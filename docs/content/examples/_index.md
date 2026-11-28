@@ -1,5 +1,7 @@
 ---
 title: Examples
+seoTitle: "Floor plan examples, validated at every build"
+description: "PlanDL floor plan examples, validated and rendered at every build: a step-by-step house, a reference house, an open plan, a terrace, and compound rooms."
 ---
 
 These examples are validated and rendered during every documentation build.

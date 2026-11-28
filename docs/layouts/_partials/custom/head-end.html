@@ -8,3 +8,19 @@
 <link rel="stylesheet" href="{{ "plandl-view.css" | relURL }}">
 <script defer src="{{ "viewer.js" | relURL }}"></script>
 {{- end }}
+{{- /* Structured data: the site and the language on the front page, a breadcrumb trail on every other page. */ -}}
+{{- if .IsHome }}
+{{- $data := dict
+  "@context" "https://schema.org"
+  "@graph" (slice
+    (dict "@type" "WebSite" "@id" (printf "%s#website" site.Home.Permalink) "url" site.Home.Permalink "name" site.Title "description" site.Params.description "inLanguage" "en")
+    (dict "@type" "SoftwareSourceCode" "name" site.Title "description" site.Params.description "url" site.Home.Permalink "codeRepository" "https://github.com/Mitek99/plandl" "programmingLanguage" "TypeScript" "runtimePlatform" "Node.js")
+  ) }}
+<script type="application/ld+json">{{ $data | jsonify | safeJS }}</script>
+{{- else }}
+{{- $items := slice }}
+{{- range $i, $p := .Ancestors.Reverse | append . }}
+  {{- $items = $items | append (dict "@type" "ListItem" "position" (add $i 1) "name" (cond $p.IsHome "Home" ($p.LinkTitle)) "item" $p.Permalink) }}
+{{- end }}
+<script type="application/ld+json">{{ dict "@context" "https://schema.org" "@type" "BreadcrumbList" "itemListElement" $items | jsonify | safeJS }}</script>
+{{- end }}

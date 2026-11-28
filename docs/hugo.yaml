@@ -1,5 +1,12 @@
 baseURL: https://plandl.org/
 title: PlanDL
+enableGitInfo: true
+# Tags and categories are unused; without this Hugo publishes empty /tags/ and /categories/ pages.
+disableKinds:
+  - taxonomy
+  - term
+outputs:
+  home: [html, rss, llms]
 module:
   imports:
     - path: github.com/imfing/hextra
@@ -26,6 +33,8 @@ menu:
       params:
         icon: github
 params:
+  homeTitle: "PlanDL – a floor-plan language for LLM agents"
+  description: "PlanDL is a small, strict language for floor plans that LLM agents can write. Rooms sit on a grid; the compiler checks the plan works as a home and renders SVG."
   search:
     enable: false
   navbar:

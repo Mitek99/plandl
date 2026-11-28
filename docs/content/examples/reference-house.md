@@ -1,5 +1,7 @@
 ---
 title: Reference house
+seoTitle: "Reference house: a single-storey floor plan"
+description: "A schematic single-storey house written in PlanDL: bedrooms, bathrooms, laundry, and a living room with kitchen, passing plandl check --strict."
 aliases:
   - /reference-house/
 ---

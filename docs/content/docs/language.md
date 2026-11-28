@@ -1,5 +1,7 @@
 ---
 title: Language
+seoTitle: "Language reference: grid, rooms, doors, windows"
+description: "PlanDL language reference: lexical rules and the GRID, ROOM, TERRACE, MERGE, DOOR, OPENING, WINDOW, and furniture commands, with parameters and examples."
 weight: 3
 ---
 

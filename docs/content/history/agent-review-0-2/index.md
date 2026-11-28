@@ -1,5 +1,6 @@
 ---
 title: Agent review of PlanDL 0.2
+description: "Eleven LLM agents wrote floor plans from the PlanDL 0.2 spec. All validated, but 8 of 11 had defects an architect would redline. What changed after."
 linkTitle: Agent review of 0.2
 date: 2026-11-27
 sidebar:
